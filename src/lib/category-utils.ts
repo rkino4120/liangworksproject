@@ -1,3 +1,10 @@
+interface CategoryObject {
+  id: string;
+  name: string;
+}
+
+type Category = CategoryObject | string;
+
 // カテゴリ関連のユーティリティ関数
 export const categoryConfig = {
   colors: {
