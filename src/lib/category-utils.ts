@@ -17,11 +17,11 @@ export const categoryConfig = {
   ],
 };
 
-export const getCategoryValue = (category: any): string => {
+export const getCategoryValue = (category: Category): string => {
   return typeof category === 'object' ? category.id : category;
 };
 
-export const getCategoryName = (category: any): string => {
+export const getCategoryName = (category: Category): string => {
   if (typeof category === 'object') {
     return category.name;
   }
