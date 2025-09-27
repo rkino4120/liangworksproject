@@ -1,6 +1,6 @@
 'use client';
 
-import { Work } from '@/lib/microcms';
+import { Work } from '@/hooks/useWorks';
 import { categoryConfig, getCategoryValue, getCategoryName } from '@/lib/category-utils';
 import Image from 'next/image';
 import { memo } from 'react';
@@ -15,7 +15,7 @@ const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      {work.thumbnail && (
+      {work.thumbnail ? (
         <div className="relative h-48 w-full">
           <Image
             src={work.thumbnail.url}
@@ -24,7 +24,12 @@ const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
             loading="lazy"
+
           />
+        </div>
+      ) : (
+        <div className="h-48 bg-gray-200 flex items-center justify-center">
+          <span className="text-gray-500">画像なし</span>
         </div>
       )}
       

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Work } from '@/lib/microcms';
+import { Work } from '@/hooks/useWorks';
 import { categoryConfig, getCategoryValue } from '@/lib/category-utils';
 import WorkCard from './WorkCard';
 
