@@ -47,7 +47,7 @@ interface XRSceneManagerProps {
 }
 
 interface AnimationManager {
-    animate: (target: any, property: string, from: number, to: number, easingFunction: EasingFunction, onComplete?: () => void) => void;
+    animate: (target: TransformNode | Mesh, property: string, from: number, to: number, easingFunction: EasingFunction, onComplete?: () => void) => void;
 }
 
 // ===== 定数 =====
@@ -160,7 +160,7 @@ const useAudioManager = () => {
 // ===== カスタムフック：アニメーション管理 =====
 const useAnimationManager = (sceneRef: React.RefObject<Scene | null>) => {
     const animationManager = useMemo<AnimationManager>(() => ({
-        animate: (target: any, property: string, from: number, to: number, easingFunction: EasingFunction, onComplete?: () => void) => {
+        animate: (target: TransformNode | Mesh, property: string, from: number, to: number, easingFunction: EasingFunction, onComplete?: () => void) => {
             if (!sceneRef.current) return;
             Animation.CreateAndStartAnimation(
                 `anim_${property}_${Date.now()}`,
@@ -177,7 +177,7 @@ const useAnimationManager = (sceneRef: React.RefObject<Scene | null>) => {
         }
     }), [sceneRef]);
 
-    const runAnimation = useCallback((target: any, property: string, from: number, to: number, easingFunction: EasingFunction, onAnimationEnd?: () => void) => {
+    const runAnimation = useCallback((target: TransformNode | Mesh, property: string, from: number, to: number, easingFunction: EasingFunction, onAnimationEnd?: () => void) => {
         animationManager.animate(target, property, from, to, easingFunction, onAnimationEnd);
     }, [animationManager]);
 
