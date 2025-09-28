@@ -197,30 +197,34 @@ const XRSceneManager: React.FC<XRSceneManagerProps> = React.memo(({ onGalleryRot
         }
     }, [onGalleryRotate]);
 
-    const handleTrigger = useCallback((component: any) => {
-        if (component.changes.pressed?.current && !component.changes.pressed?.previous) {
+    const handleTrigger = useCallback((component: unknown) => {
+        const comp = component as { changes: { pressed?: { current: boolean; previous: boolean } } };
+        if (comp.changes.pressed?.current && !comp.changes.pressed?.previous) {
             toggleAudioRef.current?.();
         }
     }, [toggleAudioRef]);
 
-    const handleAButton = useCallback((component: any) => {
-        if (component.changes.pressed?.current && !component.changes.pressed?.previous) {
+    const handleAButton = useCallback((component: unknown) => {
+        const comp = component as { changes: { pressed?: { current: boolean; previous: boolean } } };
+        if (comp.changes.pressed?.current && !comp.changes.pressed?.previous) {
             onNextPageRef.current();
         }
     }, []);
 
-    const setupController = useCallback((controller: any, motionController: any) => {
+    const setupController = useCallback((controller: unknown, motionController: unknown) => {
         if (!scene) return;
         
-        const thumbstick = motionController.getComponent('xr-standard-thumbstick');
+        const mc = motionController as { getComponent: (id: string) => any };
+        const thumbstick = mc.getComponent('xr-standard-thumbstick');
         if (thumbstick) {
             thumbstick.onAxisValueChangedObservable.add(handleThumbstick);
         }
 
-        const parentMesh = controller.grip || controller.pointer;
+        const ctrl = controller as { grip?: any; pointer?: any; inputSource: { handedness: string } };
+        const parentMesh = ctrl.grip || ctrl.pointer;
         if (!parentMesh) return;
 
-        if (controller.inputSource.handedness === 'left') {
+        if (ctrl.inputSource.handedness === 'left') {
             const audioButton = scene.getMeshByName("audio-button-text");
             if (audioButton) {
                 audioButton.setParent(parentMesh);
@@ -228,11 +232,11 @@ const XRSceneManager: React.FC<XRSceneManagerProps> = React.memo(({ onGalleryRot
                 audioButton.rotation = new Vector3(Math.PI / 4, 0, 0);
             }
 
-            const triggerComponent = motionController.getComponent('xr-standard-trigger');
+            const triggerComponent = mc.getComponent('xr-standard-trigger');
             if (triggerComponent) {
                 triggerComponent.onButtonStateChangedObservable.add(handleTrigger);
             }
-        } else if (controller.inputSource.handedness === 'right') {
+        } else if (ctrl.inputSource.handedness === 'right') {
             const pageNavParent = scene.getTransformNodeByName("page-nav-parent");
             if (pageNavParent) {
                 pageNavParent.setParent(parentMesh);
@@ -240,7 +244,7 @@ const XRSceneManager: React.FC<XRSceneManagerProps> = React.memo(({ onGalleryRot
                 pageNavParent.rotation = new Vector3(Math.PI / 4, 0, 0);
             }
 
-            const aButton = motionController.getComponent('a-button');
+            const aButton = mc.getComponent('a-button');
             if (aButton) aButton.onButtonStateChangedObservable.add(handleAButton);
         }
     }, [scene, handleThumbstick, handleTrigger, handleAButton]);
@@ -614,5 +618,7 @@ const App = React.memo(function App() {
 
     return <CirclePlanesScene />;
 });
+
+XRSceneManager.displayName = 'XRSceneManager';
 
 export default App;

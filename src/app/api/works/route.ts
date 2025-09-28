@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from 'microcms-js-sdk';
-import { Work, WorksResponse } from '@/types/work';
+import { WorksResponse } from '@/types/work';
 
 // サーバーサイドでのみ環境変数を使用
 const client = createClient({
