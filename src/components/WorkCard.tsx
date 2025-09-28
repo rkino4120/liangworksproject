@@ -1,6 +1,6 @@
 'use client';
 
-import { Work } from '@/hooks/useWorks';
+import { Work } from '@/types/work';
 import { categoryConfig, getCategoryValue, getCategoryName } from '@/lib/category-utils';
 import Image from 'next/image';
 import { memo } from 'react';
@@ -57,7 +57,7 @@ const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
           rel="noopener noreferrer"
           className="inline-block w-full text-center bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors duration-200"
         >
-          作品を見る
+          デモを見る
         </a>
       </div>
     </div>

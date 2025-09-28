@@ -1,42 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from 'microcms-js-sdk';
+import { Work, WorksResponse } from '@/types/work';
 
 // サーバーサイドでのみ環境変数を使用
 const client = createClient({
   serviceDomain: process.env.MICROCMS_SERVICE_DOMAIN!,
   apiKey: process.env.MICROCMS_API_KEY!,
 });
-
-export type Work = {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  category: {
-    id: string;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-    publishedAt: string;
-    revisedAt: string;
-  };
-  thumbnail?: {
-    url: string;
-    height: number;
-    width: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-  publishedAt: string;
-  revisedAt: string;
-};
-
-export type WorksResponse = {
-  contents: Work[];
-  totalCount: number;
-  offset: number;
-  limit: number;
-};
 
 export async function GET() {
   try {

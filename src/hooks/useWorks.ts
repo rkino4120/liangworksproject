@@ -1,38 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-
-// API Routeから返される型定義
-export type Work = {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  category: {
-    id: string;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-    publishedAt: string;
-    revisedAt: string;
-  };
-  thumbnail?: {
-    url: string;
-    height: number;
-    width: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-  publishedAt: string;
-  revisedAt: string;
-};
-
-export type WorksResponse = {
-  contents: Work[];
-  totalCount: number;
-  offset: number;
-  limit: number;
-};
+import { Work } from '@/types/work';
 
 interface UseWorksResult {
   works: Work[];
