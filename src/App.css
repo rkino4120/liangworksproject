@@ -1,0 +1,39 @@
+/* App.css - アプリケーション固有のスタイル */
+
+/* このファイルはビルドエラーを回避するために作成されました */
+/* 実際のスタイルはglobals.cssとTailwind CSSで管理されています */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Babylon.js特有のスタイル調整 */
+.babylonjs-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ユーザーインターフェース用の基本スタイル */
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.ui-overlay > * {
+  pointer-events: auto;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+  .babylonjs-canvas {
+    height: 50vh;
+  }
+}
