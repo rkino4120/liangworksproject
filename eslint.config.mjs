@@ -21,9 +21,11 @@ const eslintConfig = [
     ],
   },
   {
-    files: ["**/babylonjs/**/*.tsx"],
+    files: ["**/babylonjs/**/*.tsx", "**/threejs/**/*.tsx"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn"
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "react-hooks/exhaustive-deps": "warn"
     }
   }
 ];
