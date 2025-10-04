@@ -8,10 +8,9 @@ import { Canvas, useLoader } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { HandleTarget, Handle } from '@react-three/handle';
-import { DoubleSide, Texture, TextureLoader, RepeatWrapping, Vector3 } from 'three';
-import { SafeSpotLight, SafeMesh, createPosition, createHexColor, degreesToRadians } from '../../../components/SafeThreeComponents';
-import type { Position3D } from '../../../types/three-fiber';
-import { LIGHTING_CONFIG, CAMERA_CONFIG, GALLERY_CONFIG } from '../../../config/three-config';
+import { DoubleSide, Texture, TextureLoader, RepeatWrapping, LinearFilter, NearestFilter } from 'three';
+import { SafeSpotLight, SafeMesh, createPosition, degreesToRadians } from '../../../components/SafeThreeComponents';
+import { LIGHTING_CONFIG, GALLERY_CONFIG } from '../../../config/three-config';
 
 const imageUrls = [
   '/images/photo01.jpg',
@@ -52,7 +51,8 @@ function PhotoPlane({ position, rotation, texture, title }: PhotoPlaneProps) {
       const imgWidth = img.naturalWidth ?? img.width ?? 1;
       const imgHeight = img.naturalHeight ?? img.height ?? 1;
       const aspectRatio = imgWidth / imgHeight;
-      const MAX_SIZE = 0.75;
+      // VR環境での適切な視聴距離を考慮したサイズ（元の0.75から0.5に縮小）
+      const MAX_SIZE = 0.5;
       if (aspectRatio > 1) {
         width = MAX_SIZE;
         height = MAX_SIZE / aspectRatio;
@@ -107,11 +107,23 @@ function PhotoGallery({ radius, imageUrls }: PhotoGalleryProps) {
   // すべての画像テクスチャをロード
   const textures = useLoader(TextureLoader, imageUrls);
 
+  // テクスチャの品質設定を最適化
+  useMemo(() => {
+    textures.forEach(texture => {
+      // VR用のフィルタリング設定
+      texture.magFilter = LinearFilter; // 拡大時の補間を滑らかに
+      texture.minFilter = LinearFilter; // 縮小時の補間を滑らかに
+      texture.generateMipmaps = true; // ミップマップを生成
+      texture.anisotropy = 16; // 異方性フィルタリングを最大に
+    });
+  }, [textures]);
+
   // ギャラリーの動的な半径を計算 (メモ化により再計算を抑制)
   const dynamicRadius = useMemo(() => {
     const totalWidth = textures.reduce((sum, texture) => {
       const aspect = (texture.image?.naturalWidth || 1) / (texture.image?.naturalHeight || 1);
-      return sum + (aspect > 1 ? 0.75 : 0.75 * aspect);
+      // VR用に調整されたサイズ（0.75 → 0.5）
+      return sum + (aspect > 1 ? 0.5 : 0.5 * aspect);
     }, 0);
 
     // 半径が初期半径以上で、かつ写真が重ならないように十分な大きさであることを確認
@@ -181,7 +193,7 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
-      <Canvas camera={{ position: [0, 5, 10], fov: 75 }} flat dpr={[1, 2]}>
+      <Canvas camera={{ position: [0, 5, 10], fov: 75 }} flat dpr={[1, 3]}>
         <XR store={store}>
           <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
           <SafeSpotLight
@@ -190,6 +202,7 @@ export default function App() {
             intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
             color={LIGHTING_CONFIG.SPOT.COLOR}
             castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
+            penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
           />
           <rectAreaLight
             args={[0xffffff, 5, 0.5, 2]}

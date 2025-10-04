@@ -13,6 +13,7 @@ export const LIGHTING_CONFIG = {
     INTENSITY: 500,
     COLOR: '#FFF7E1',
     CAST_SHADOW: true,
+    PENUMBRA: 0.5, // 縁のボケ効果（0: シャープ、1: 完全にボケる）
   },
   RECT_AREA: {
     ARGS: [0xffffff, 5, 0.5, 2] as const,
