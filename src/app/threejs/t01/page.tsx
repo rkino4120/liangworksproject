@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useEffect, useState } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
@@ -186,7 +186,58 @@ function Floor() {
 }
 
 export default function App() {
-  const store = createXRStore();
+  const [xrSupported, setXrSupported] = useState(false);
+  const [store, setStore] = useState<any>(null);
+
+  // XRサポートの確認とストアの初期化
+  useEffect(() => {
+    let xrStore: any = null;
+    try {
+      // ブラウザ環境でのみXRストアを作成
+      if (typeof window !== 'undefined') {
+        // WebXR APIの利用可能性を確認
+        if ('navigator' in window && 'xr' in navigator && navigator.xr) {
+          navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+            if (supported) {
+              try {
+                xrStore = createXRStore();
+                setStore(xrStore);
+                setXrSupported(true);
+                console.log('XR initialized successfully');
+              } catch (error) {
+                console.error('XR store creation failed:', error);
+                setXrSupported(false);
+              }
+            } else {
+              console.warn('VR sessions are not supported');
+              setXrSupported(false);
+            }
+          }).catch(() => {
+            console.warn('WebXR support check failed');
+            setXrSupported(false);
+          });
+        } else {
+          console.warn('WebXR API not available');
+          setXrSupported(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize XR:', error);
+      setXrSupported(false);
+    }
+    
+    return () => {
+      // クリーンアップ
+      if (xrStore) {
+        try {
+          xrStore.destroy?.();
+        } catch (error) {
+          console.warn('Error during XR store cleanup:', error);
+        }
+      }
+    };
+  }, []);
+
   const wallHeight = GALLERY_CONFIG.WALL.HEIGHT;
   const wallRadius = GALLERY_CONFIG.WALL.RADIUS;
   const segments = GALLERY_CONFIG.WALL.SEGMENTS;
@@ -194,34 +245,67 @@ export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
       <Canvas camera={{ position: [0, 5, 10], fov: 75 }} flat dpr={[1, 3]}>
-        <XR store={store}>
-          <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
-          <SafeSpotLight
-            position={LIGHTING_CONFIG.SPOT.POSITION}
-            angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
-            intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
-            color={LIGHTING_CONFIG.SPOT.COLOR}
-            castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
-            penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
-          />
-          <rectAreaLight
-            args={[0xffffff, 5, 0.5, 2]}
-            position={[0, 1.5, 0]}
-            lookAt={[1, 1.5, 2]}
-            castShadow
-          />
-          <Suspense fallback={null}>
-            <Floor />
-            <SafeMesh 
-              position={createPosition(0, wallHeight / 2, 0)}
-              receiveShadow={true}
-            >
-              <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
-              <meshStandardMaterial side={DoubleSide} color={0x000000} />
-            </SafeMesh>
-            <InteractiveGallery radius={1.1} imageUrls={imageUrls} />
-          </Suspense>
-        </XR>
+        {/* XRサポートがある場合のみXRコンポーネントを使用 */}
+        {xrSupported && store ? (
+          <XR store={store}>
+            <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
+            <SafeSpotLight
+              position={LIGHTING_CONFIG.SPOT.POSITION}
+              angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
+              intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
+              color={LIGHTING_CONFIG.SPOT.COLOR}
+              castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
+              penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
+            />
+            <rectAreaLight
+              args={[0xffffff, 5, 0.5, 2]}
+              position={[0, 1.5, 0]}
+              lookAt={[1, 1.5, 2]}
+              castShadow
+            />
+            <Suspense fallback={null}>
+              <Floor />
+              <SafeMesh 
+                position={createPosition(0, wallHeight / 2, 0)}
+                receiveShadow={true}
+              >
+                <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
+                <meshStandardMaterial side={DoubleSide} color={0x000000} />
+              </SafeMesh>
+              <InteractiveGallery radius={1.1} imageUrls={imageUrls} />
+            </Suspense>
+          </XR>
+        ) : (
+          /* 通常モード（XRなし） */
+          <>
+            <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
+            <SafeSpotLight
+              position={LIGHTING_CONFIG.SPOT.POSITION}
+              angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
+              intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
+              color={LIGHTING_CONFIG.SPOT.COLOR}
+              castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
+              penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
+            />
+            <rectAreaLight
+              args={[0xffffff, 5, 0.5, 2]}
+              position={[0, 1.5, 0]}
+              lookAt={[1, 1.5, 2]}
+              castShadow
+            />
+            <Suspense fallback={null}>
+              <Floor />
+              <SafeMesh 
+                position={createPosition(0, wallHeight / 2, 0)}
+                receiveShadow={true}
+              >
+                <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
+                <meshStandardMaterial side={DoubleSide} color={0x000000} />
+              </SafeMesh>
+              <InteractiveGallery radius={1.1} imageUrls={imageUrls} />
+            </Suspense>
+          </>
+        )}
         <OrbitControls />
       </Canvas>
     </div>
