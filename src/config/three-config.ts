@@ -9,7 +9,7 @@ export const LIGHTING_CONFIG = {
   },
   SPOT: {
     POSITION: [0, 4, 0] as Position3D,
-    ANGLE_DEGREES: 22.5,
+    ANGLE_DEGREES: 18.5,
     INTENSITY: 500,
     COLOR: '#FFF7E1',
     CAST_SHADOW: true,
@@ -39,6 +39,9 @@ export const GALLERY_CONFIG = {
   },
   INTERACTIVE: {
     RADIUS: 1.1,
+  },
+  PHOTO: {
+    RADIUS: 0.9, // 写真の円形配置の半径（値を大きくすると円が大きくなる）
   },
 } as const;
 

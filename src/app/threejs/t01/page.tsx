@@ -3,8 +3,8 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { Suspense, useMemo, useEffect, useState } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Suspense, useMemo, useEffect, useState, useRef } from 'react';
+import { Canvas, useLoader, useFrame, ThreeEvent } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { HandleTarget, Handle } from '@react-three/handle';
@@ -185,9 +185,92 @@ function Floor() {
   );
 }
 
+// VRガイドテキスト表示コンポーネント
+function VRGuideText({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <group position={[0, 2, -1.5]}>
+      {/* 背景パネル */}
+      <Box args={[1.5, 0.6, 0.02]} position={[0, 0, -0.01]}>
+        <meshStandardMaterial color="#000000" opacity={0.8} transparent />
+      </Box>
+      {/* メインテキスト */}
+      <Text
+        fontSize={0.08}
+        color="#ffffff"
+        anchorX="center"
+        anchorY="middle"
+        maxWidth={1.4}
+        textAlign="center"
+        position={[0, 0.1, 0]}
+      >
+        VR写真ギャラリーにようこそ。{'\n'}
+        これから操作説明を開始します。{'\n'}
+        必要がない方はスキップを押してください。
+      </Text>
+    </group>
+  );
+}
+
+// VRガイドスキップボタンコンポーネント（簡素版）
+function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSkip: () => void }) {
+  
+  if (!visible) return null;
+
+  // 一時的にコンソールで確認
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === ' ' || event.key === 'Enter') { // スペースキーまたはエンターでスキップ
+        onSkip();
+      }
+    };
+
+    if (visible) {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [visible, onSkip]);
+
+  return (
+    <group position={[0, 1.2, -1.5]}>
+      {/* ボタン背景 */}
+      <Box args={[0.4, 0.15, 0.05]}>
+        <meshStandardMaterial 
+          color="#ff4757" 
+          roughness={0.3}
+          metalness={0.1}
+        />
+      </Box>
+      {/* ボタンテキスト */}
+      <Text
+        fontSize={0.06}
+        color="#ffffff"
+        anchorX="center"
+        anchorY="middle"
+        position={[0, 0, 0.026]}
+      >
+        スキップ (スペースキー)
+      </Text>
+    </group>
+  );
+}
+
 export default function App() {
   const [xrSupported, setXrSupported] = useState(false);
   const [store, setStore] = useState<any>(null);
+  const [isVRActive, setIsVRActive] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideAudio, setGuideAudio] = useState<HTMLAudioElement | null>(null);
+
+  // スキップ機能
+  const handleSkipGuide = () => {
+    setShowGuide(false);
+    if (guideAudio) {
+      guideAudio.pause();
+      guideAudio.currentTime = 0;
+    }
+  };
 
   // XRサポートの確認とストアの初期化
   useEffect(() => {
@@ -204,6 +287,26 @@ export default function App() {
                 setStore(xrStore);
                 setXrSupported(true);
                 console.log('XR initialized successfully');
+                
+                // XRセッション開始の監視
+                xrStore.subscribe((state: any) => {
+                  if (state.session && !isVRActive) {
+                    setIsVRActive(true);
+                    setShowGuide(true);
+                    // VR開始時にガイド音声を再生
+                    const audio = new Audio('/mp3/guide01.mp3');
+                    audio.play().catch(console.error);
+                    setGuideAudio(audio);
+                  } else if (!state.session && isVRActive) {
+                    setIsVRActive(false);
+                    setShowGuide(false);
+                    // VR終了時に音声を停止
+                    if (guideAudio) {
+                      guideAudio.pause();
+                      guideAudio.currentTime = 0;
+                    }
+                  }
+                });
               } catch (error) {
                 console.error('XR store creation failed:', error);
                 setXrSupported(false);
@@ -272,7 +375,10 @@ export default function App() {
                 <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
                 <meshStandardMaterial side={DoubleSide} color={0x000000} />
               </SafeMesh>
-              <InteractiveGallery radius={1.1} imageUrls={imageUrls} />
+              <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
+              {/* VRガイド表示 */}
+              <VRGuideText visible={showGuide} />
+              <VRGuideSkipButton visible={showGuide} onSkip={handleSkipGuide} />
             </Suspense>
           </XR>
         ) : (
@@ -302,7 +408,10 @@ export default function App() {
                 <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
                 <meshStandardMaterial side={DoubleSide} color={0x000000} />
               </SafeMesh>
-              <InteractiveGallery radius={1.1} imageUrls={imageUrls} />
+              <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
+              {/* VRガイド表示 */}
+              <VRGuideText visible={showGuide} />
+              <VRGuideSkipButton visible={showGuide} onSkip={handleSkipGuide} />
             </Suspense>
           </>
         )}
