@@ -3,12 +3,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { Suspense, useMemo, useEffect, useState, useRef } from 'react';
-import { Canvas, useLoader, useFrame, ThreeEvent } from '@react-three/fiber';
+import { Suspense, useMemo, useEffect, useState, useRef, useCallback } from 'react';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { HandleTarget, Handle } from '@react-three/handle';
-import { DoubleSide, Texture, TextureLoader, RepeatWrapping, LinearFilter, NearestFilter } from 'three';
+import { DoubleSide, Texture, TextureLoader, RepeatWrapping, LinearFilter } from 'three';
 import { SafeSpotLight, SafeMesh, createPosition, degreesToRadians } from '../../../components/SafeThreeComponents';
 import { LIGHTING_CONFIG, GALLERY_CONFIG } from '../../../config/three-config';
 import { VRGuideText, VRGuideSkipButton } from '../../../components/VRGuide';
@@ -169,7 +169,7 @@ function InteractiveGallery({ radius, imageUrls }: PhotoGalleryProps) {
 
 function Floor() {
   const texture = useTexture('/texture/concrete_diff.jpg');
-  const bumpMap = useTexture('/texture/concrete_rough.png'); 
+  const bumpMap = useTexture('/texture/concrete_rough.png');
   texture.repeat.set(12, 12);
   texture.wrapS = texture.wrapT = RepeatWrapping;
 
@@ -178,8 +178,8 @@ function Floor() {
 
   return (
     <Circle args={[8, 128]} rotation-x={-Math.PI / 2} receiveShadow>
-      <meshStandardMaterial 
-        map={texture} 
+      <meshStandardMaterial
+        map={texture}
         bumpMap={bumpMap}
         bumpScale={0.05}
       />
@@ -190,10 +190,18 @@ function Floor() {
 export default function App() {
   const [xrSupported, setXrSupported] = useState(false);
   const [store, setStore] = useState<any>(null);
-  const [isVRActive, setIsVRActive] = useState(false);
   
-  // VRガイド機能を新しいフックで管理
+  // VRガイド機能をフックで管理
   const vrGuide = useVRGuide();
+  // stale closureを避けるためにrefで管理
+  const vrGuideRef = useRef(vrGuide);
+  const isVRActiveRef = useRef(false);
+
+  // 毎回のレンダリングでvrGuideの最新の値をrefに格納する
+  useEffect(() => {
+    vrGuideRef.current = vrGuide;
+  });
+
 
   // XRサポートの確認とストアの初期化
   useEffect(() => {
@@ -210,26 +218,19 @@ export default function App() {
                 setStore(xrStore);
                 setXrSupported(true);
                 console.log('XR initialized successfully');
-                
-                // XRセッション開始の監視
+
+                // XRセッション状態の変更を監視
                 xrStore.subscribe((state: any) => {
-                  console.log('XR session state changed:', { 
-                    hasSession: !!state.session, 
-                    currentVRActive: isVRActive,
-                    currentShowGuide: vrGuide.showGuide 
-                  });
-                  
-                  if (state.session && !isVRActive) {
+                  if (state.session && !isVRActiveRef.current) {
                     // VRセッション開始
-                    setIsVRActive(true);
+                    isVRActiveRef.current = true;
                     console.log('Starting VR guide...');
-                    // 安全な音声再生
-                    setTimeout(() => vrGuide.startGuide(), 100); // 少し遅延させて確実に実行
-                  } else if (!state.session && isVRActive) {
+                    setTimeout(() => vrGuideRef.current.startGuide(), 100);
+                  } else if (!state.session && isVRActiveRef.current) {
                     // VRセッション終了
                     console.log('Ending VR session, stopping guide...');
-                    setIsVRActive(false);
-                    vrGuide.endGuide();
+                    isVRActiveRef.current = false;
+                    vrGuideRef.current.endGuide();
                   }
                 });
               } catch (error) {
@@ -253,13 +254,15 @@ export default function App() {
       console.error('Failed to initialize XR:', error);
       setXrSupported(false);
     }
-    
+
     return () => {
       // クリーンアップ
       console.log('Cleaning up XR store and audio...');
       
-      // VRガイドをクリーンアップ
-      vrGuide.cleanup();
+      // VRガイドを終了
+      if(vrGuideRef.current) {
+        vrGuideRef.current.endGuide();
+      }
       
       // XRストアを破棄
       if (xrStore) {
@@ -270,84 +273,57 @@ export default function App() {
         }
       }
     };
-  }, []); // 依存関係を空に戻す
+  }, []); // このuseEffectはマウント時に一度だけ実行
 
   const wallHeight = GALLERY_CONFIG.WALL.HEIGHT;
   const wallRadius = GALLERY_CONFIG.WALL.RADIUS;
   const segments = GALLERY_CONFIG.WALL.SEGMENTS;
 
+  const SceneContent = () => (
+    <>
+      <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
+      <SafeSpotLight
+        position={LIGHTING_CONFIG.SPOT.POSITION}
+        angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
+        intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
+        color={LIGHTING_CONFIG.SPOT.COLOR}
+        castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
+        penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
+      />
+      <Suspense fallback={null}>
+        <Floor />
+        <SafeMesh
+          position={createPosition(0, wallHeight / 2, 0)}
+          receiveShadow={true}
+        >
+          <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
+          <meshStandardMaterial side={DoubleSide} color={0x000000} />
+        </SafeMesh>
+        <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
+        {/* VRガイド表示 */}
+        <VRGuideText visible={vrGuide.showGuide} text={vrGuide.currentText} />
+        <VRGuideSkipButton visible={vrGuide.showGuide} onSkip={vrGuide.skipGuide} />
+      </Suspense>
+    </>
+  );
+
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
-      <Canvas camera={{ position: [0, 5, 10], fov: 75 }} flat dpr={[1, 3]}>
+      <Canvas camera={{ position: [0, 1.6, 5], fov: 75 }} flat dpr={[1, 2]}>
         {/* XRサポートがある場合のみXRコンポーネントを使用 */}
         {xrSupported && store ? (
           <XR store={store}>
-            <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
-            <SafeSpotLight
-              position={LIGHTING_CONFIG.SPOT.POSITION}
-              angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
-              intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
-              color={LIGHTING_CONFIG.SPOT.COLOR}
-              castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
-              penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
-            />
-            <rectAreaLight
-              args={[0xffffff, 5, 0.5, 2]}
-              position={[0, 1.5, 0]}
-              lookAt={[1, 1.5, 2]}
-              castShadow
-            />
-            <Suspense fallback={null}>
-              <Floor />
-              <SafeMesh 
-                position={createPosition(0, wallHeight / 2, 0)}
-                receiveShadow={true}
-              >
-                <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
-                <meshStandardMaterial side={DoubleSide} color={0x000000} />
-              </SafeMesh>
-              <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
-              {/* VRガイド表示 */}
-              <VRGuideText visible={vrGuide.showGuide} />
-              <VRGuideSkipButton visible={vrGuide.showGuide} onSkip={vrGuide.skipGuide} />
-            </Suspense>
+            <SceneContent />
           </XR>
         ) : (
           /* 通常モード（XRなし） */
           <>
-            <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
-            <SafeSpotLight
-              position={LIGHTING_CONFIG.SPOT.POSITION}
-              angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}
-              intensity={LIGHTING_CONFIG.SPOT.INTENSITY}
-              color={LIGHTING_CONFIG.SPOT.COLOR}
-              castShadow={LIGHTING_CONFIG.SPOT.CAST_SHADOW}
-              penumbra={LIGHTING_CONFIG.SPOT.PENUMBRA}
-            />
-            <rectAreaLight
-              args={[0xffffff, 5, 0.5, 2]}
-              position={[0, 1.5, 0]}
-              lookAt={[1, 1.5, 2]}
-              castShadow
-            />
-            <Suspense fallback={null}>
-              <Floor />
-              <SafeMesh 
-                position={createPosition(0, wallHeight / 2, 0)}
-                receiveShadow={true}
-              >
-                <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
-                <meshStandardMaterial side={DoubleSide} color={0x000000} />
-              </SafeMesh>
-              <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
-              {/* VRガイド表示 */}
-              <VRGuideText visible={vrGuide.showGuide} />
-              <VRGuideSkipButton visible={vrGuide.showGuide} onSkip={vrGuide.skipGuide} />
-            </Suspense>
+            <SceneContent />
+            <OrbitControls />
           </>
         )}
-        <OrbitControls />
       </Canvas>
     </div>
   );
 }
+

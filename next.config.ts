@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@/components', '@/lib'],
   },
+  // React DevToolsエラーを抑制
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.devtool = 'eval-source-map';
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

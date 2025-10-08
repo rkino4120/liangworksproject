@@ -66,3 +66,9 @@ export const validateIntensity = (intensity: number): number => {
   }
   return intensity;
 };
+
+// 開発環境設定
+export const DEV_CONFIG = {
+  // 開発環境でのデバッグ情報表示
+  SHOW_DEBUG_INFO: process.env.NODE_ENV === 'development',
+} as const;

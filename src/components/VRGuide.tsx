@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Box, Text } from '@react-three/drei';
 
 // VRガイドテキスト表示コンポーネント
-export function VRGuideText({ visible }: { visible: boolean }) {
+export function VRGuideText({ visible, text }: { visible: boolean; text: string }) {
   if (!visible) return null;
 
   return (
@@ -23,9 +23,7 @@ export function VRGuideText({ visible }: { visible: boolean }) {
         textAlign="center"
         position={[0, 0.2, 0]}
       >
-        VR写真ギャラリーにようこそ。{'\n'}
-        これから操作説明を開始します。{'\n'}
-        必要がない方はスキップを押してください。
+        {text}
       </Text>
     </group>
   );
@@ -65,7 +63,7 @@ export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSki
         anchorY="middle"
         position={[0, 0, 0.026]}
       >
-        スキップ (スペースキー)
+        次へ (スペースキー)
       </Text>
     </group>
   );
