@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text } from '@react-three/drei';
+import { ThreeEvent } from '@react-three/fiber';
 
 // VRガイドテキスト表示コンポーネント
 export function VRGuideText({ visible, text }: { visible: boolean; text: string }) {
@@ -44,17 +45,33 @@ export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSki
   }, [visible, onSkip]);
 
   if (!visible) return null;
+  const [hover, setHover] = useState(false);
 
   return (
     <group position={[0, 1.2, -1.5]}>
-      {/* ボタン背景 */}
-      <Box args={[0.4, 0.15, 0.05]}>
-        <meshStandardMaterial 
-          color="#ff4757" 
-          roughness={0.3}
-          metalness={0.1}
-        />
-      </Box>
+      {/* ボタン背景 - pointer イベントを追加（groupで受けて中にmeshを置く） */}
+      <group
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+        onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          onSkip();
+        }}
+        onClick={(e: ThreeEvent<PointerEvent>) => {
+          // クリックでも確実に動作させる
+          e.stopPropagation();
+          onSkip();
+        }}
+      >
+  <mesh name="vr-guide-skip-button">
+          <boxGeometry args={[0.4, 0.15, 0.05]} />
+          <meshStandardMaterial
+            color={hover ? '#ff6b7a' : '#ff4757'}
+            roughness={0.3}
+            metalness={0.1}
+          />
+        </mesh>
+      </group>
       {/* ボタンテキスト */}
       <Text
         fontSize={0.06}
