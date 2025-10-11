@@ -50,14 +50,14 @@ interface PhotoPlaneProps {
 function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating, animationDelay }: PhotoPlaneProps) {
   const meshRef = useRef<any>(null);
   const [animationStarted, setAnimationStarted] = useState(false);
-  const [currentY, setCurrentY] = useState(isVisible ? position[1] : position[1] + 5);
+  const [opacity, setOpacity] = useState(isVisible && !isAnimating ? 1 : 0);
   const [delayComplete, setDelayComplete] = useState(false);
 
   // アニメーション遅延の管理
   useEffect(() => {
     if (isAnimating && !delayComplete) {
       const timer = setTimeout(() => {
-        console.log(`Starting animation for ${title} after ${animationDelay}ms delay`);
+        console.log(`Starting fade-in animation for ${title} after ${animationDelay}ms delay`);
         setDelayComplete(true);
         setAnimationStarted(true);
       }, animationDelay);
@@ -69,18 +69,30 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
     }
   }, [isAnimating, animationDelay, title, delayComplete]);
 
-  // アニメーション効果
+  // フェードインアニメーション効果
   useFrame((state, delta) => {
     if (meshRef.current && animationStarted && isAnimating) {
-      // Y座標を目標位置まで徐々に移動
-      const targetY = position[1];
-      if (currentY > targetY) {
-        const newY = Math.max(targetY, currentY - delta * 3); // 落下速度調整
-        setCurrentY(newY);
-        meshRef.current.position.y = newY;
+      // 透明度を徐々に上げる
+      if (opacity < 1) {
+        const newOpacity = Math.min(1, opacity + delta * 0.8); // フェードイン速度調整
+        setOpacity(newOpacity);
+        
+        // メッシュのマテリアルの透明度を更新
+        if (meshRef.current.material) {
+          meshRef.current.material.transparent = true;
+          meshRef.current.material.opacity = newOpacity;
+        }
+        // タイトルメッシュの透明度も更新
+        const titleMesh = meshRef.current.parent?.children.find((child: any) => 
+          child.name?.startsWith('title-')
+        );
+        if (titleMesh && titleMesh.material) {
+          titleMesh.material.transparent = true;
+          titleMesh.material.opacity = newOpacity;
+        }
       } else {
         // アニメーション完了
-        console.log(`Animation completed for ${title}`);
+        console.log(`Fade-in animation completed for ${title}`);
         setAnimationStarted(false);
       }
     }
@@ -92,15 +104,21 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
     if (meshRef.current) {
       meshRef.current.visible = isVisible;
       if (!isVisible) {
-        // 非表示時は上の位置にリセット
-        setCurrentY(position[1] + 5);
-        meshRef.current.position.y = position[1] + 5;
+        // 非表示時は透明度を0にリセット
+        setOpacity(0);
         setAnimationStarted(false);
         setDelayComplete(false);
+        if (meshRef.current.material) {
+          meshRef.current.material.transparent = true;
+          meshRef.current.material.opacity = 0;
+        }
       } else if (isVisible && !isAnimating) {
-        // 表示されているがアニメーション中でない場合は通常位置に
-        setCurrentY(position[1]);
-        meshRef.current.position.y = position[1];
+        // 表示されているがアニメーション中でない場合は完全不透明に
+        setOpacity(1);
+        if (meshRef.current.material) {
+          meshRef.current.material.transparent = false;
+          meshRef.current.material.opacity = 1;
+        }
       }
     }
   }, [isVisible, position, title, isAnimating]);
@@ -127,7 +145,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   }, [texture.image]);
 
   return (
-    <group ref={meshRef} position={[position[0], currentY, position[2]]} rotation={rotation}>
+    <group ref={meshRef} position={position} rotation={rotation}>
       {/* Three.jsのPlaneジオメトリ */}
       <Plane args={[width, height]} castShadow>
         {/* PBR（物理ベースレンダリング）のような外観のためのマテリアル */}
@@ -137,14 +155,23 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
           metalness={0.1} // 金属感（0: 誘電体、1: 金属）
           side={DoubleSide} // 両面表示
           toneMapped={true} // トーンマッピング適用
+          transparent={true} // 透明度有効
+          opacity={opacity} // 動的透明度
         />
       </Plane>
       {/* タイトルプレート */}
       {title && (
         <group position={[0, -height / 2 - 0.12, 0]}>
-          <Box args={[0.2, 0.06, 0.005]} receiveShadow castShadow>
-            <meshStandardMaterial color="#bbb" metalness={1} roughness={0.2} />
-          </Box>
+          <mesh name={`title-${title}`}>
+            <boxGeometry args={[0.2, 0.06, 0.005]} />
+            <meshStandardMaterial 
+              color="#bbb" 
+              metalness={1} 
+              roughness={0.2}
+              transparent={true}
+              opacity={opacity}
+            />
+          </mesh>
           <Text
             fontSize={0.02}
             color="#fff"

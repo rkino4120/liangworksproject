@@ -95,8 +95,25 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     const handleEnded = () => {
       console.log(`Step ${currentStep + 1} audio ended`);
       setAudioPlaying(false);
-      // 次のステップへ
-      setCurrentStep(prev => prev + 1);
+      
+      const nextStep = currentStep + 1;
+      if (nextStep >= guideSteps.length) {
+        // 全ガイド終了時は写真をアニメーション表示
+        console.log('All guide steps completed, showing photos with animation...');
+        setShowGuide(false);
+        setCurrentText('');
+        setCurrentStep(0); // ステップをリセット
+        setPhotosAnimating(true);
+        setShowPhotos(true);
+        
+        setTimeout(() => {
+          setPhotosAnimating(false);
+          console.log('Photo animation completed after guide completion');
+        }, 3000); // 3秒のアニメーション
+      } else {
+        // 次のステップへ
+        setCurrentStep(nextStep);
+      }
     };
 
     const handleError = (error: Event) => {

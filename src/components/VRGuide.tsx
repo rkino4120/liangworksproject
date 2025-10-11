@@ -23,7 +23,7 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
         maxWidth={1.4}
         textAlign="center"
         lineHeight={1.5}
-        position={[0, 0, -0.01]}
+        position={[0, -0.1, 0.01]}
       >
         {text}
       </Text>
