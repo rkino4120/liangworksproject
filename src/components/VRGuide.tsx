@@ -22,8 +22,8 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
         anchorY="middle"
         maxWidth={1.4}
         textAlign="center"
-        lineHeight={1.25}
-        position={[0, 0, 0.01]}
+        lineHeight={1.5}
+        position={[0, 0, -0.01]}
       >
         {text}
       </Text>
