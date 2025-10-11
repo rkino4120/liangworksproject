@@ -280,6 +280,49 @@ export default function App() {
   // stale closureを避けるためにrefで管理
   const vrGuideRef = useRef(vrGuide);
   const isVRActiveRef = useRef(false);
+  
+  // BGM管理用のref
+  const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // BGM初期化
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const bgmAudio = new Audio('/mp3/vfbgm.mp3');
+      bgmAudio.loop = true; // ループ再生
+      bgmAudio.volume = 0.3; // 音量を30%に設定
+      bgmAudio.preload = 'auto'; // 事前読み込み
+      bgmAudioRef.current = bgmAudio;
+      
+      console.log('BGM initialized');
+    }
+    
+    return () => {
+      // クリーンアップ
+      if (bgmAudioRef.current) {
+        bgmAudioRef.current.pause();
+        bgmAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  // BGM再生関数
+  const playBGM = useCallback(() => {
+    if (bgmAudioRef.current) {
+      bgmAudioRef.current.play().catch(error => {
+        console.warn('BGM playback failed:', error);
+      });
+      console.log('BGM started');
+    }
+  }, []);
+
+  // BGM停止関数
+  const stopBGM = useCallback(() => {
+    if (bgmAudioRef.current) {
+      bgmAudioRef.current.pause();
+      bgmAudioRef.current.currentTime = 0; // 先頭に戻す
+      console.log('BGM stopped');
+    }
+  }, []);
 
   // 毎回のレンダリングでvrGuideの最新の値をrefに格納する
   useEffect(() => {
@@ -309,11 +352,13 @@ export default function App() {
                     // VRセッション開始
                     isVRActiveRef.current = true;
                     console.log('Starting VR guide...');
+                    playBGM(); // BGM再生開始
                     setTimeout(() => vrGuideRef.current.startGuide(), 100);
                   } else if (!state.session && isVRActiveRef.current) {
                     // VRセッション終了
                     console.log('Ending VR session, stopping guide...');
                     isVRActiveRef.current = false;
+                    stopBGM(); // BGM停止
                     vrGuideRef.current.endGuide();
                   }
                 });
@@ -342,6 +387,9 @@ export default function App() {
     return () => {
       // クリーンアップ
       console.log('Cleaning up XR store and audio...');
+      
+      // BGMを停止
+      stopBGM();
       
       // VRガイドを終了
       if(vrGuideRef.current) {
