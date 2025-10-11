@@ -368,6 +368,11 @@ export default function App() {
   const SceneContent = () => (
     <>
       <ambientLight intensity={LIGHTING_CONFIG.AMBIENT.INTENSITY} />
+      <hemisphereLight 
+        color={LIGHTING_CONFIG.HEMISPHERE.SKY_COLOR}
+        groundColor={LIGHTING_CONFIG.HEMISPHERE.GROUND_COLOR}
+        intensity={LIGHTING_CONFIG.HEMISPHERE.INTENSITY}
+      />
       <SafeSpotLight
         position={LIGHTING_CONFIG.SPOT.POSITION}
         angle={degreesToRadians(LIGHTING_CONFIG.SPOT.ANGLE_DEGREES)}

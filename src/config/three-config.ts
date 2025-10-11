@@ -5,7 +5,12 @@ import type { Position3D } from '../types/three-fiber';
 // ライト設定
 export const LIGHTING_CONFIG = {
   AMBIENT: {
-    INTENSITY: 0.05, // 写真を鮮明に見せるため環境光を強化
+    INTENSITY: 0.05, // 環境光の基本強度
+  },
+  HEMISPHERE: {
+    SKY_COLOR: '#ffffff', // 上半球の色（空の色）
+    GROUND_COLOR: '#404040', // 下半球の色（地面の色）
+    INTENSITY: 0.6, // 写真を明るく見せるための強度
   },
   SPOT: {
     POSITION: [0, 4, 0] as Position3D,
