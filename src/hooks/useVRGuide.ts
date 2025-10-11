@@ -13,6 +13,8 @@ export interface VRGuideState {
   currentStep: number;
   totalSteps: number;
   currentText: string;
+  showPhotos: boolean;
+  photosAnimating: boolean;
 }
 
 export interface VRGuideActions {
@@ -30,6 +32,8 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
   const [currentStep, setCurrentStep] = useState(0);
   const [guideSteps, setGuideSteps] = useState<GuideSteps>([]);
   const [currentText, setCurrentText] = useState('');
+  const [showPhotos, setShowPhotos] = useState(true);
+  const [photosAnimating, setPhotosAnimating] = useState(false);
 
   // useRefを使用してAudioオブジェクトを管理します。
   // これにより、Audioオブジェクトへの参照が変更されても不要な再レンダリングが走りません。
@@ -149,17 +153,29 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     }
     console.log('Starting VR guide...');
     setShowGuide(true);
+    setShowPhotos(false); // ガイド開始時に写真を非表示
     setCurrentStep(0);
   }, [audioPlaying, guideSteps.length]);
 
-  // 現在の音声を停止し、次のステップへ
+  // 現在の音声を停止し、次のステップへ、ガイド終了時は写真をアニメーション表示
   const skipGuide = useCallback(() => {
     if (!showGuide) return;
     console.log('Skipping to next step...');
+    
+    const nextStep = currentStep + 1;
+    if (nextStep >= guideSteps.length) {
+      // ガイド終了時は写真をアニメーション表示
+      setPhotosAnimating(true);
+      setShowPhotos(true);
+      setTimeout(() => {
+        setPhotosAnimating(false);
+      }, 2000); // 2秒のアニメーション
+    }
+    
     // currentStepを更新するだけで、useEffectが再実行され、
     // クリーンアップ処理と次の音声の再生が自動的に行われます。
     setCurrentStep(prev => prev + 1);
-  }, [showGuide]);
+  }, [showGuide, currentStep, guideSteps.length]);
 
   // ガイドを完全に終了
   const endGuide = useCallback(() => {
@@ -168,6 +184,8 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     setAudioPlaying(false);
     setCurrentStep(0); // ステップをリセット
     setCurrentText('');
+    setShowPhotos(true); // 写真を表示
+    setPhotosAnimating(false);
 
     // 再生中の音声があれば停止
     if (audioRef.current) {
@@ -184,6 +202,8 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     currentStep,
     totalSteps: guideSteps.length,
     currentText,
+    showPhotos,
+    photosAnimating,
     // Actions
     startGuide,
     skipGuide,

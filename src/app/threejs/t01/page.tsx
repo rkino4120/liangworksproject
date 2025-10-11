@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { Suspense, useMemo, useEffect, useState, useRef, useCallback } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { HandleTarget, Handle } from '@react-three/handle';
@@ -42,9 +42,52 @@ interface PhotoPlaneProps {
   rotation: [number, number, number]; // 平面の回転 [x, y, z] (ラジアン)
   texture: Texture; // 表示する画像のテクスチャ
   title?: string; // タイトルを追加
+  isVisible: boolean; // 表示/非表示
+  isAnimating: boolean; // アニメーション中
+  animationDelay: number; // アニメーション遅延（ミリ秒）
 }
 
-function PhotoPlane({ position, rotation, texture, title }: PhotoPlaneProps) {
+function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating, animationDelay }: PhotoPlaneProps) {
+  const meshRef = useRef<any>(null);
+  const [animationStarted, setAnimationStarted] = useState(false);
+  const [currentY, setCurrentY] = useState(isVisible ? position[1] : position[1] + 5);
+
+  // アニメーション効果
+  useFrame((state, delta) => {
+    if (meshRef.current && isAnimating && !animationStarted) {
+      // 遅延後にアニメーション開始
+      setTimeout(() => {
+        setAnimationStarted(true);
+      }, animationDelay);
+    }
+
+    if (meshRef.current && animationStarted && isAnimating) {
+      // Y座標を目標位置まで徐々に移動
+      const targetY = position[1];
+      if (currentY > targetY) {
+        const newY = Math.max(targetY, currentY - delta * 3); // 落下速度調整
+        setCurrentY(newY);
+        meshRef.current.position.y = newY;
+      } else {
+        // アニメーション完了
+        setAnimationStarted(false);
+      }
+    }
+  });
+
+  // 可視性の管理
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.visible = isVisible;
+      if (!isVisible) {
+        // 非表示時は上の位置にリセット
+        setCurrentY(position[1] + 5);
+        meshRef.current.position.y = position[1] + 5;
+        setAnimationStarted(false);
+      }
+    }
+  }, [isVisible, position]);
+
   // 画像の縦横比を正確に取得（メモ化）
   const { width, height } = useMemo(() => {
     let width = 1, height = 1;
@@ -67,7 +110,7 @@ function PhotoPlane({ position, rotation, texture, title }: PhotoPlaneProps) {
   }, [texture.image]);
 
   return (
-    <group position={position} rotation={rotation}>
+    <group ref={meshRef} position={[position[0], currentY, position[2]]} rotation={rotation}>
       {/* Three.jsのPlaneジオメトリ */}
       <Plane args={[width, height]} castShadow>
         {/* PBR（物理ベースレンダリング）のような外観のためのマテリアル */}
@@ -103,9 +146,11 @@ function PhotoPlane({ position, rotation, texture, title }: PhotoPlaneProps) {
 interface PhotoGalleryProps {
   radius: number;
   imageUrls: string[];
+  showPhotos: boolean;
+  photosAnimating: boolean;
 }
 
-function PhotoGallery({ radius, imageUrls }: PhotoGalleryProps) {
+function PhotoGallery({ radius, imageUrls, showPhotos, photosAnimating }: PhotoGalleryProps) {
   // すべての画像テクスチャをロード
   const textures = useLoader(TextureLoader, imageUrls);
 
@@ -149,6 +194,9 @@ function PhotoGallery({ radius, imageUrls }: PhotoGalleryProps) {
             rotation={[0, rotationY, 0]} // 平面の回転
             texture={texture} // ロード済みのテクスチャを渡す
             title={imageTitles[index]} // タイトルを渡す
+            isVisible={showPhotos}
+            isAnimating={photosAnimating}
+            animationDelay={index * 200} // 200ms間隔で順次アニメーション
           />
         );
       })}
@@ -157,11 +205,11 @@ function PhotoGallery({ radius, imageUrls }: PhotoGalleryProps) {
 }
 
 
-function InteractiveGallery({ radius, imageUrls }: PhotoGalleryProps) {
+function InteractiveGallery({ radius, imageUrls, showPhotos, photosAnimating }: PhotoGalleryProps) {
   return (
     <HandleTarget>
       <Handle translate="as-rotate" rotate={{ x: false, y: true, z: false }}>
-        <PhotoGallery radius={radius} imageUrls={imageUrls} />
+        <PhotoGallery radius={radius} imageUrls={imageUrls} showPhotos={showPhotos} photosAnimating={photosAnimating} />
       </Handle>
     </HandleTarget>
   );
@@ -299,7 +347,12 @@ export default function App() {
           <cylinderGeometry args={[wallRadius, wallRadius, wallHeight, segments, 1, true]} />
           <meshStandardMaterial side={DoubleSide} color={0x000000} />
         </SafeMesh>
-        <InteractiveGallery radius={GALLERY_CONFIG.PHOTO.RADIUS} imageUrls={imageUrls} />
+        <InteractiveGallery 
+          radius={GALLERY_CONFIG.PHOTO.RADIUS} 
+          imageUrls={imageUrls} 
+          showPhotos={vrGuide.showPhotos}
+          photosAnimating={vrGuide.photosAnimating}
+        />
         {/* VRガイド表示 */}
         <VRGuideText visible={vrGuide.showGuide} text={vrGuide.currentText} />
         <VRGuideSkipButton visible={vrGuide.showGuide} onSkip={vrGuide.skipGuide} />
