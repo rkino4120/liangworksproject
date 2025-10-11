@@ -11,7 +11,7 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
   return (
     <group position={[0, 2, -1.5]}>
       {/* 背景パネル */}
-      <Box args={[1.5, 0.6, 0.02]} position={[0, 0, -0.01]}>
+      <Box args={[1.5, 1.5, 0.02]} position={[0, 0, -0.01]}>
         <meshStandardMaterial color="#000000" opacity={0.8} transparent />
       </Box>
       {/* メインテキスト */}
