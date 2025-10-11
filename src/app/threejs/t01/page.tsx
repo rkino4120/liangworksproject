@@ -142,11 +142,9 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
     <group ref={meshRef} position={position} rotation={rotation}>
       {/* Three.jsのPlaneジオメトリ */}
       <Plane args={[width, height]} castShadow>
-        {/* PBR（物理ベースレンダリング）のような外観のためのマテリアル */}
-        <meshStandardMaterial
+        {/* 照明に依存せず常に明るく表示されるマテリアル */}
+        <meshBasicMaterial
           map={texture} // テクスチャマップ
-          roughness={0.1} // 粗さを下げて反射を増やす（0: 滑らか、1: 粗い）
-          metalness={0.0} // 金属感を削除して自然な色味に（0: 誘電体、1: 金属）
           side={DoubleSide} // 両面表示
           toneMapped={false} // トーンマッピングを無効化して鮮明に
           transparent={opacity < 1} // 必要時のみ透明
