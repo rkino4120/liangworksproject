@@ -145,10 +145,10 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
         {/* PBR（物理ベースレンダリング）のような外観のためのマテリアル */}
         <meshStandardMaterial
           map={texture} // テクスチャマップ
-          roughness={0.3} // 粗さ（0: 滑らか、1: 粗い）
-          metalness={0.1} // 金属感（0: 誘電体、1: 金属）
+          roughness={0.1} // 粗さを下げて反射を増やす（0: 滑らか、1: 粗い）
+          metalness={0.0} // 金属感を削除して自然な色味に（0: 誘電体、1: 金属）
           side={DoubleSide} // 両面表示
-          toneMapped={true} // トーンマッピング適用
+          toneMapped={false} // トーンマッピングを無効化して鮮明に
           transparent={opacity < 1} // 必要時のみ透明
           opacity={opacity} // 動的透明度
         />

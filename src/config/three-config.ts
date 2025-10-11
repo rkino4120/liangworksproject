@@ -5,7 +5,7 @@ import type { Position3D } from '../types/three-fiber';
 // ライト設定
 export const LIGHTING_CONFIG = {
   AMBIENT: {
-    INTENSITY: 0.05,
+    INTENSITY: 0.05, // 写真を鮮明に見せるため環境光を強化
   },
   SPOT: {
     POSITION: [0, 4, 0] as Position3D,
