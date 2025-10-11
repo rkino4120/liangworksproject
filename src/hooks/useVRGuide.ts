@@ -219,10 +219,14 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     }
   }, []);
 
-  // 状態変化のデバッグログ
+  // 状態変化のデバッグログ（主要イベントのみ）
   useEffect(() => {
-    console.log(`VRGuide state: showGuide=${showGuide}, showPhotos=${showPhotos}, photosAnimating=${photosAnimating}, currentStep=${currentStep}`);
-  }, [showGuide, showPhotos, photosAnimating, currentStep]);
+    if (showGuide) {
+      console.log(`VR Guide active - Step: ${currentStep + 1}/${guideSteps.length}`);
+    } else if (photosAnimating) {
+      console.log('Photos animating...');
+    }
+  }, [showGuide, photosAnimating, currentStep, guideSteps.length]);
 
   return {
     // State

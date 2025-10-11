@@ -49,79 +49,73 @@ interface PhotoPlaneProps {
 
 function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating, animationDelay }: PhotoPlaneProps) {
   const meshRef = useRef<any>(null);
-  const [animationStarted, setAnimationStarted] = useState(false);
+  const titleMeshRef = useRef<any>(null);
   const [opacity, setOpacity] = useState(isVisible && !isAnimating ? 1 : 0);
-  const [delayComplete, setDelayComplete] = useState(false);
 
-  // アニメーション遅延の管理
+  // アニメーション管理を簡素化
   useEffect(() => {
-    if (isAnimating && !delayComplete) {
+    if (isAnimating && isVisible) {
+      // 初期状態を透明に設定
+      setOpacity(0);
+      
+      // 遅延後にアニメーション開始
       const timer = setTimeout(() => {
-        console.log(`Starting fade-in animation for ${title} after ${animationDelay}ms delay`);
-        setDelayComplete(true);
-        setAnimationStarted(true);
+        console.log(`Starting fade-in animation for ${title}`);
+        let animationFrameId: number;
+        
+        const animate = () => {
+          setOpacity(prev => {
+            const newOpacity = Math.min(1, prev + 0.02); // 固定速度でフェードイン
+            
+            // アニメーション完了チェック
+            if (newOpacity < 1) {
+              animationFrameId = requestAnimationFrame(animate);
+            } else {
+              console.log(`Fade-in completed for ${title}`);
+            }
+            
+            return newOpacity;
+          });
+        };
+        
+        animate();
+        
+        // クリーンアップ
+        return () => {
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+          }
+        };
       }, animationDelay);
       
       return () => clearTimeout(timer);
-    } else if (!isAnimating) {
-      setDelayComplete(false);
-      setAnimationStarted(false);
+    } else if (!isVisible) {
+      // 非表示時は即座に透明
+      setOpacity(0);
+    } else if (isVisible && !isAnimating) {
+      // アニメーションなしで表示時は即座に不透明
+      setOpacity(1);
     }
-  }, [isAnimating, animationDelay, title, delayComplete]);
+  }, [isVisible, isAnimating, animationDelay, title]);
 
-  // フェードインアニメーション効果
-  useFrame((state, delta) => {
-    if (meshRef.current && animationStarted && isAnimating) {
-      // 透明度を徐々に上げる
-      if (opacity < 1) {
-        const newOpacity = Math.min(1, opacity + delta * 0.8); // フェードイン速度調整
-        setOpacity(newOpacity);
-        
-        // メッシュのマテリアルの透明度を更新
-        if (meshRef.current.material) {
-          meshRef.current.material.transparent = true;
-          meshRef.current.material.opacity = newOpacity;
-        }
-        // タイトルメッシュの透明度も更新
-        const titleMesh = meshRef.current.parent?.children.find((child: any) => 
-          child.name?.startsWith('title-')
-        );
-        if (titleMesh && titleMesh.material) {
-          titleMesh.material.transparent = true;
-          titleMesh.material.opacity = newOpacity;
-        }
-      } else {
-        // アニメーション完了
-        console.log(`Fade-in animation completed for ${title}`);
-        setAnimationStarted(false);
-      }
-    }
-  });
-
-  // 可視性の管理
+  // マテリアルの透明度を更新
   useEffect(() => {
-    console.log(`PhotoPlane ${title}: isVisible=${isVisible}, isAnimating=${isAnimating}`);
+    if (meshRef.current?.material) {
+      meshRef.current.material.transparent = opacity < 1;
+      meshRef.current.material.opacity = opacity;
+    }
+    if (titleMeshRef.current?.material) {
+      titleMeshRef.current.material.transparent = opacity < 1;
+      titleMeshRef.current.material.opacity = opacity;
+    }
+  }, [opacity]);
+
+  // 表示/非表示の管理
+  useEffect(() => {
     if (meshRef.current) {
       meshRef.current.visible = isVisible;
-      if (!isVisible) {
-        // 非表示時は透明度を0にリセット
-        setOpacity(0);
-        setAnimationStarted(false);
-        setDelayComplete(false);
-        if (meshRef.current.material) {
-          meshRef.current.material.transparent = true;
-          meshRef.current.material.opacity = 0;
-        }
-      } else if (isVisible && !isAnimating) {
-        // 表示されているがアニメーション中でない場合は完全不透明に
-        setOpacity(1);
-        if (meshRef.current.material) {
-          meshRef.current.material.transparent = false;
-          meshRef.current.material.opacity = 1;
-        }
-      }
     }
-  }, [isVisible, position, title, isAnimating]);
+  }, [isVisible]);
 
   // 画像の縦横比を正確に取得（メモ化）
   const { width, height } = useMemo(() => {
@@ -155,20 +149,20 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
           metalness={0.1} // 金属感（0: 誘電体、1: 金属）
           side={DoubleSide} // 両面表示
           toneMapped={true} // トーンマッピング適用
-          transparent={true} // 透明度有効
+          transparent={opacity < 1} // 必要時のみ透明
           opacity={opacity} // 動的透明度
         />
       </Plane>
       {/* タイトルプレート */}
       {title && (
         <group position={[0, -height / 2 - 0.12, 0]}>
-          <mesh name={`title-${title}`}>
+          <mesh ref={titleMeshRef} name={`title-${title}`}>
             <boxGeometry args={[0.2, 0.06, 0.005]} />
             <meshStandardMaterial 
               color="#bbb" 
               metalness={1} 
               roughness={0.2}
-              transparent={true}
+              transparent={opacity < 1}
               opacity={opacity}
             />
           </mesh>
