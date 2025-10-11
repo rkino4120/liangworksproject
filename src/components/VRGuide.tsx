@@ -16,7 +16,7 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
       </Box>
       {/* メインテキスト */}
       <Text
-        fontSize={0.08}
+        fontSize={0.06}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
@@ -65,7 +65,7 @@ export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSki
         }}
       >
   <mesh name="vr-guide-skip-button">
-          <boxGeometry args={[0.4, 0.15, 0.05]} />
+          <boxGeometry args={[0.5, 0.15, 0.05]} />
           <meshStandardMaterial
             color={hover ? '#ff6b7a' : '#ff4757'}
             roughness={0.3}
