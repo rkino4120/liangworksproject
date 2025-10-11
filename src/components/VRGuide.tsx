@@ -21,7 +21,7 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
         anchorY="middle"
         maxWidth={1.4}
         textAlign="center"
-        position={[0, 0.2, 0]}
+        position={[0, 0, 0.01]}
       >
         {text}
       </Text>
@@ -63,7 +63,7 @@ export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSki
         anchorY="middle"
         position={[0, 0, 0.026]}
       >
-        次へ (スペースキー)
+        ガイドスキップ
       </Text>
     </group>
   );
