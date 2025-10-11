@@ -51,16 +51,26 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   const meshRef = useRef<any>(null);
   const [animationStarted, setAnimationStarted] = useState(false);
   const [currentY, setCurrentY] = useState(isVisible ? position[1] : position[1] + 5);
+  const [delayComplete, setDelayComplete] = useState(false);
+
+  // アニメーション遅延の管理
+  useEffect(() => {
+    if (isAnimating && !delayComplete) {
+      const timer = setTimeout(() => {
+        console.log(`Starting animation for ${title} after ${animationDelay}ms delay`);
+        setDelayComplete(true);
+        setAnimationStarted(true);
+      }, animationDelay);
+      
+      return () => clearTimeout(timer);
+    } else if (!isAnimating) {
+      setDelayComplete(false);
+      setAnimationStarted(false);
+    }
+  }, [isAnimating, animationDelay, title, delayComplete]);
 
   // アニメーション効果
   useFrame((state, delta) => {
-    if (meshRef.current && isAnimating && !animationStarted) {
-      // 遅延後にアニメーション開始
-      setTimeout(() => {
-        setAnimationStarted(true);
-      }, animationDelay);
-    }
-
     if (meshRef.current && animationStarted && isAnimating) {
       // Y座標を目標位置まで徐々に移動
       const targetY = position[1];
@@ -70,6 +80,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
         meshRef.current.position.y = newY;
       } else {
         // アニメーション完了
+        console.log(`Animation completed for ${title}`);
         setAnimationStarted(false);
       }
     }
@@ -77,6 +88,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
 
   // 可視性の管理
   useEffect(() => {
+    console.log(`PhotoPlane ${title}: isVisible=${isVisible}, isAnimating=${isAnimating}`);
     if (meshRef.current) {
       meshRef.current.visible = isVisible;
       if (!isVisible) {
@@ -84,9 +96,14 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
         setCurrentY(position[1] + 5);
         meshRef.current.position.y = position[1] + 5;
         setAnimationStarted(false);
+        setDelayComplete(false);
+      } else if (isVisible && !isAnimating) {
+        // 表示されているがアニメーション中でない場合は通常位置に
+        setCurrentY(position[1]);
+        meshRef.current.position.y = position[1];
       }
     }
-  }, [isVisible, position]);
+  }, [isVisible, position, title, isAnimating]);
 
   // 画像の縦横比を正確に取得（メモ化）
   const { width, height } = useMemo(() => {

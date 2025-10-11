@@ -163,18 +163,32 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     console.log('Skipping to next step...');
     
     const nextStep = currentStep + 1;
+    console.log(`Current step: ${currentStep}, Next step: ${nextStep}, Total steps: ${guideSteps.length}`);
+    
     if (nextStep >= guideSteps.length) {
-      // ガイド終了時は写真をアニメーション表示
+      // ガイド終了時
+      console.log('Guide completed, showing photos with animation...');
+      setShowGuide(false);
+      setAudioPlaying(false);
+      setCurrentText('');
       setPhotosAnimating(true);
       setShowPhotos(true);
+      
+      // 音声停止
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
+      
       setTimeout(() => {
         setPhotosAnimating(false);
-      }, 2000); // 2秒のアニメーション
+        console.log('Photo animation completed');
+      }, 3000); // 3秒のアニメーション
+    } else {
+      // 次のステップへ
+      setCurrentStep(nextStep);
     }
-    
-    // currentStepを更新するだけで、useEffectが再実行され、
-    // クリーンアップ処理と次の音声の再生が自動的に行われます。
-    setCurrentStep(prev => prev + 1);
   }, [showGuide, currentStep, guideSteps.length]);
 
   // ガイドを完全に終了
@@ -194,6 +208,11 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
       audioRef.current = null;
     }
   }, []);
+
+  // 状態変化のデバッグログ
+  useEffect(() => {
+    console.log(`VRGuide state: showGuide=${showGuide}, showPhotos=${showPhotos}, photosAnimating=${photosAnimating}, currentStep=${currentStep}`);
+  }, [showGuide, showPhotos, photosAnimating, currentStep]);
 
   return {
     // State
