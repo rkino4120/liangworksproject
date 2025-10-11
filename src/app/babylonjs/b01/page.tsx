@@ -214,38 +214,38 @@ const XRSceneManager: React.FC<XRSceneManagerProps> = React.memo(({ onGalleryRot
     const setupController = useCallback((controller: unknown, motionController: unknown) => {
         if (!scene) return;
         
-        const mc = motionController as { getComponent: (id: string) => any };
+        const mc = motionController as { getComponent: (id: string) => unknown };
         const thumbstick = mc.getComponent('xr-standard-thumbstick');
         if (thumbstick) {
-            thumbstick.onAxisValueChangedObservable.add(handleThumbstick);
+            (thumbstick as any).onAxisValueChangedObservable.add(handleThumbstick);
         }
 
-        const ctrl = controller as { grip?: any; pointer?: any; inputSource: { handedness: string } };
+        const ctrl = controller as { grip?: unknown; pointer?: unknown; inputSource: { handedness: string } };
         const parentMesh = ctrl.grip || ctrl.pointer;
         if (!parentMesh) return;
 
         if (ctrl.inputSource.handedness === 'left') {
             const audioButton = scene.getMeshByName("audio-button-text");
             if (audioButton) {
-                audioButton.setParent(parentMesh);
+                audioButton.setParent(parentMesh as any);
                 audioButton.position = new Vector3(0, 0.05, 0.1);
                 audioButton.rotation = new Vector3(Math.PI / 4, 0, 0);
             }
 
             const triggerComponent = mc.getComponent('xr-standard-trigger');
             if (triggerComponent) {
-                triggerComponent.onButtonStateChangedObservable.add(handleTrigger);
+                (triggerComponent as any).onButtonStateChangedObservable.add(handleTrigger);
             }
         } else if (ctrl.inputSource.handedness === 'right') {
             const pageNavParent = scene.getTransformNodeByName("page-nav-parent");
             if (pageNavParent) {
-                pageNavParent.setParent(parentMesh);
+                pageNavParent.setParent(parentMesh as any);
                 pageNavParent.position = new Vector3(0, 0.07, 0.1);
                 pageNavParent.rotation = new Vector3(Math.PI / 4, 0, 0);
             }
 
             const aButton = mc.getComponent('a-button');
-            if (aButton) aButton.onButtonStateChangedObservable.add(handleAButton);
+            if (aButton) (aButton as any).onButtonStateChangedObservable.add(handleAButton);
         }
     }, [scene, handleThumbstick, handleTrigger, handleAButton]);
 
@@ -389,7 +389,7 @@ const CirclePlanesScene: React.FC = () => {
         if (sceneReady && currentPhotos.length > 0 && boxes.length === 0) {
             loadBoxesData();
         }
-    }, [sceneReady, currentPhotos, loadBoxesData]);
+    }, [sceneReady, currentPhotos, loadBoxesData, boxes.length]);
 
     useEffect(() => {
         toggleAudioRef.current = toggleAudio;

@@ -106,5 +106,5 @@ export const usePageMeta = (options: MetaOptions) => {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [options.title, options.description, options.ogTitle, options.ogDescription, options.ogType, options.ogImage, options.ogUrl, options.keywords]);
+  }, [options]);
 };

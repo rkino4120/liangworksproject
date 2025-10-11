@@ -54,7 +54,7 @@ export const useWorks = (): UseWorksResult => {
     }
   }, []);
 
-  const fetchWorks = async (useCache = true) => {
+  const fetchWorks = useCallback(async (useCache = true) => {
     try {
       setLoading(true);
       setError(null);
@@ -135,11 +135,11 @@ export const useWorks = (): UseWorksResult => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadFromCache, saveToCache]);
 
   useEffect(() => {
     fetchWorks();
-  }, []);
+  }, [fetchWorks]);
 
   return {
     works,

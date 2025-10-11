@@ -32,6 +32,8 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
 
 // VRガイドスキップボタンコンポーネント
 export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSkip: () => void }) {
+  const [hover, setHover] = useState(false);
+
   // キーボードイベント処理（常に実行、visibleで制御）
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -45,7 +47,6 @@ export function VRGuideSkipButton({ visible, onSkip }: { visible: boolean; onSki
   }, [visible, onSkip]);
 
   if (!visible) return null;
-  const [hover, setHover] = useState(false);
 
   return (
     <group position={[0, 1.2, -1.5]}>
