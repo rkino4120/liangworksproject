@@ -16,12 +16,13 @@ export function VRGuideText({ visible, text }: { visible: boolean; text: string 
       </Box>
       {/* メインテキスト */}
       <Text
-        fontSize={0.06}
+        fontSize={0.05}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
         maxWidth={1.4}
         textAlign="center"
+        lineHeight={1.25}
         position={[0, 0, 0.01]}
       >
         {text}
