@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from 'microcms-js-sdk';
 import { WorksResponse } from '@/types/work';
 
-// サーバーサイドでのみ環境変数を使用
+// サーバーサイドで読み込む環境変数を使用
 const client = createClient({
   serviceDomain: process.env.MICROCMS_SERVICE_DOMAIN!,
   apiKey: process.env.MICROCMS_API_KEY!,

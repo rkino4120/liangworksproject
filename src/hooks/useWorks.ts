@@ -70,7 +70,7 @@ export const useWorks = (): UseWorksResult => {
         }
       }
 
-      // API Route経由でデータを取得
+      // API Route経由でデータ取得
       const apiResponse = await fetch('/api/works');
       if (!apiResponse.ok) {
         throw new Error(`HTTP error! status: ${apiResponse.status}`);
@@ -83,12 +83,12 @@ export const useWorks = (): UseWorksResult => {
     } catch (err) {
       console.error('Failed to fetch works:', err);
       setError('作品データの取得に失敗しました');
-      // エラー時はダミーデータを表示
+      // エラー時のサンプルデータを表示
       setWorks([
         {
           id: '1',
           title: 'Interactive 3D Scene',
-          description: 'Three.jsで作成したインタラクティブな3Dシーン。マウスの動きに合わせてオブジェクトが回転します。',
+          description: 'Three.jsを使ったインタラクティブな3Dシーン。マウスの動きに応じてオブジェクトが回転します。',
           url: 'https://example.com/threejs-demo1',
           category: {
             id: 'threejs',
@@ -111,7 +111,7 @@ export const useWorks = (): UseWorksResult => {
         {
           id: '2',
           title: 'Physics Simulation',
-          description: 'Babylon.jsを使用した物理シミュレーション。重力や衝突判定を含む複雑な物理演算を実装。',
+          description: 'Babylon.jsを使った物理シミュレーション。重力や衝突判定を含む複雑な物理演算を実現。',
           url: 'https://example.com/babylonjs-demo1',
           category: {
             id: 'babylonjs',

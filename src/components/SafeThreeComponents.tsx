@@ -1,9 +1,9 @@
-// 型安全なThree.jsコンポーネントラッパー
+// 安全なThree.jsコンポーネントラッパー
 
 import React from 'react';
 import { Position3D, SafeSpotLightProps, SafeMeshProps } from '../types/three-fiber';
 
-// 型安全なSpotLightコンポーネント
+// 安全なSpotLightコンポーネント
 export const SafeSpotLight: React.FC<SafeSpotLightProps> = (props) => {
   return (
     // @ts-expect-error Three.js Fiberの型定義の制限を回避
@@ -11,7 +11,7 @@ export const SafeSpotLight: React.FC<SafeSpotLightProps> = (props) => {
   );
 };
 
-// 型安全なMeshコンポーネント
+// 安全なMeshコンポーネント
 export const SafeMesh: React.FC<SafeMeshProps> = (props) => {
   return (
     // @ts-expect-error Three.js Fiberの型定義の制限を回避

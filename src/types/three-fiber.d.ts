@@ -1,4 +1,4 @@
-// Three.js Fiber の型安全性を向上させるための型定義
+// Three.js Fiber 型安全性を向上させるための型定義
 
 import { Vector3Tuple, Texture } from 'three';
 
@@ -54,7 +54,7 @@ declare module '@react-three/fiber' {
   }
 }
 
-// 型安全な位置指定のためのヘルパー型
+// 型安全な位置・回転・スケールのヘルパー型
 export type Position3D = [number, number, number];
 export type Rotation3D = [number, number, number];
 export type Scale3D = [number, number, number];

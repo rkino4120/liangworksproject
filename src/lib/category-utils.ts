@@ -5,7 +5,7 @@ interface CategoryObject {
 
 type Category = CategoryObject | string;
 
-// カテゴリ関連のユーティリティ関数
+// カテゴリ設定とユーティリティ関数
 export const categoryConfig = {
   colors: {
     threejs: 'bg-green-100 text-green-800',

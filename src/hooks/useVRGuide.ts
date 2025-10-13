@@ -23,7 +23,7 @@ export interface VRGuideActions {
   endGuide: () => void;
 }
 
-// guide.jsonの型定義
+// guide.jsonから定義
 type GuideSteps = GuideStep[];
 
 export function useVRGuide(): VRGuideState & VRGuideActions {
@@ -35,8 +35,8 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
   const [showPhotos, setShowPhotos] = useState(true);
   const [photosAnimating, setPhotosAnimating] = useState(false);
 
-  // useRefを使用してAudioオブジェクトを管理します。
-  // これにより、Audioオブジェクトへの参照が変更されても不要な再レンダリングが走りません。
+  // useRefを使ってAudioオブジェクトを管理する
+  // これにより、Audioオブジェクトの参照が保持され、必要なクリーンアップを実行できる
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // guide.jsonを読み込み
@@ -56,16 +56,16 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     loadGuideSteps();
   }, []);
 
-  // 音声再生とテキスト表示を管理するuseEffect
+  // 音声ガイドとテキスト表示を管理するuseEffect
   useEffect(() => {
-    // ガイドが表示されていない、またはガイドデータが空の場合は何もしない
+    // ガイド表示されていないまたはガイドデータが空の場合は何もしない
     if (!showGuide || guideSteps.length === 0) {
       return;
     }
 
-    // 全てのステップが完了した場合の処理
+    // 全てのステップが完了した時の処理
     if (currentStep >= guideSteps.length) {
-      console.log('All steps completed');
+      
       setShowGuide(false);
       setAudioPlaying(false);
       setCurrentStep(0);
@@ -79,7 +79,7 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
       return;
     }
 
-    // テキストを設定（改行を変換）
+    // テキスト設定（改行文字を処理）
     setCurrentText(step.text.replace(/\\n/g, '\n'));
 
     // 新しいAudioオブジェクトを作成
@@ -88,18 +88,18 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
 
     // --- イベントリスナーの定義 ---
     const handlePlay = () => {
-      console.log('Audio started playing:', step.mp3file);
+      
       setAudioPlaying(true);
     };
 
     const handleEnded = () => {
-      console.log(`Step ${currentStep + 1} audio ended`);
+      
       setAudioPlaying(false);
       
       const nextStep = currentStep + 1;
       if (nextStep >= guideSteps.length) {
-        // 全ガイド終了時は写真をアニメーション表示
-        console.log('All guide steps completed, showing photos with animation...');
+        // ガイド終了時は写真アニメーション表示
+        
         setShowGuide(false);
         setCurrentText('');
         setCurrentStep(0); // ステップをリセット
@@ -108,7 +108,7 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
         
         setTimeout(() => {
           setPhotosAnimating(false);
-          console.log('Photo animation completed after guide completion');
+          
         }, 3000); // 3秒のアニメーション
       } else {
         // 次のステップへ
@@ -122,65 +122,65 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
       setAudioPlaying(false);
     };
     
-    // --- イベントリスナーの登録 ---
+    // --- イベントリスナー登録 ---
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    // 音声の再生を開始
+    // 音声を再生
     audio.play().catch((error) => {
       console.error('Failed to play guide audio:', error);
-      // alertは使用せず、コンソールにエラーを出力
+      // alertを使わず、コンソールにエラー出力
       console.error('This might be due to browser autoplay policy. User interaction is required.');
       setAudioPlaying(false);
     });
 
     // --- クリーンアップ処理 ---
-    // このuseEffectが再実行される前（currentStepが変わった時など）や、
-    // コンポーネントがアンマウントされた時に実行されます。
-    // これにより、古い音声の再生やイベントリスナーが残ることを防ぎます。
+    // このuseEffectが再実行される時（currentStepが変わった時など）や、
+    // コンポーネントがアンマウントされる時に実行される
+    // これにより、古い音声のイベントリスナーが残ることを防ぎます
     return () => {
-      console.log('Cleaning up audio for step:', currentStep + 1);
       
-      // イベントリスナーを必ず削除
+      
+      // イベントリスナーを削除
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
 
-      // 音声を停止し、リソースを解放
+      // 音声を停止してリソースを解放
       if (!audio.paused) {
         audio.pause();
       }
-      // srcを空にすることで、ブラウザによるダウンロードを停止させることができます
+      // srcを空にすることでブラウザにリソースを停止させる
       audio.src = ''; 
       audioRef.current = null;
     };
-    // 依存配列を絞り、意図したタイミングでのみ実行されるようにします
+    // 依存配列。これらのデータが変更された時のみ実行される
   }, [currentStep, showGuide, guideSteps]);
 
   // ガイド開始
   const startGuide = useCallback(() => {
     if (audioPlaying) {
-      console.log('Audio already playing, skipping start.');
+      
       return;
     }
     if (guideSteps.length === 0) {
-      console.log('Guide steps not loaded yet, please wait...');
+      
       return;
     }
-    console.log('Starting VR guide...');
+    
     setShowGuide(true);
-    setShowPhotos(false); // ガイド開始時に写真を非表示
+    setShowPhotos(false); // ガイド開始時は写真非表示
     setCurrentStep(0);
   }, [audioPlaying, guideSteps.length]);
 
-  // ガイドを即座に終了して写真をアニメーション表示
+  // ガイドを即座に終了してアニメーション表示
   const skipGuide = useCallback(() => {
     if (!showGuide) return;
-    console.log('Skipping guide completely...');
+    
     
     // ガイド終了処理
-    console.log('Guide skipped, showing photos with animation...');
+    
     setShowGuide(false);
     setAudioPlaying(false);
     setCurrentText('');
@@ -188,7 +188,7 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     setPhotosAnimating(true);
     setShowPhotos(true);
     
-    // 音声停止
+    // 音声を停止
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -197,13 +197,13 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     
     setTimeout(() => {
       setPhotosAnimating(false);
-      console.log('Photo animation completed');
+      
     }, 3000); // 3秒のアニメーション
   }, [showGuide]);
 
   // ガイドを完全に終了
   const endGuide = useCallback(() => {
-    console.log('Ending VR guide...');
+    
     setShowGuide(false);
     setAudioPlaying(false);
     setCurrentStep(0); // ステップをリセット
@@ -219,12 +219,12 @@ export function useVRGuide(): VRGuideState & VRGuideActions {
     }
   }, []);
 
-  // 状態変化のデバッグログ（主要イベントのみ）
+  // 状態変更をログ出力（主にデバッグ用）
   useEffect(() => {
     if (showGuide) {
-      console.log(`VR Guide active - Step: ${currentStep + 1}/${guideSteps.length}`);
+      
     } else if (photosAnimating) {
-      console.log('Photos animating...');
+      
     }
   }, [showGuide, photosAnimating, currentStep, guideSteps.length]);
 

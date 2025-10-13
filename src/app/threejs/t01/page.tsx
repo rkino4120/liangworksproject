@@ -25,26 +25,26 @@ const imageUrls = [
   '/images/photo08.jpg'
 ];
 
-// 画像ごとのタイトルをここで定義
+// 画像とタイトルのデータを定義
 const imageTitles = [
-  '欲情に咲く花',
-  '孤城',
-  '整然',
-  '補食',
-  '脈動',
+  '欲望に咲く花',
+  '孤独',
+  '自然',
+  '補色',
+  '夢想',
   '心身権衡',
-  '日を追うごとに',
-  '羽化'
+  '追想と追憶',
+  '羽毛'
 ];
 
 interface PhotoPlaneProps {
-  position: [number, number, number]; // 平面の位置 [x, y, z]
-  rotation: [number, number, number]; // 平面の回転 [x, y, z] (ラジアン)
-  texture: Texture; // 表示する画像のテクスチャ
+  position: [number, number, number]; // 平面の位置[x, y, z]
+  rotation: [number, number, number]; // 平面の回転[x, y, z] (ラジアン)
+  texture: Texture; // 表示するテクスチャ
   title?: string; // タイトルを追加
   isVisible: boolean; // 表示/非表示
   isAnimating: boolean; // アニメーション中
-  animationDelay: number; // アニメーション遅延（ミリ秒）
+  animationDelay: number; // アニメーションの遅延ミリ秒
 }
 
 function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating, animationDelay }: PhotoPlaneProps) {
@@ -52,26 +52,26 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   const titleMeshRef = useRef<any>(null);
   const [opacity, setOpacity] = useState(isVisible && !isAnimating ? 1 : 0);
 
-  // アニメーション管理を簡素化
+  // アニメーション管理を簡略化
   useEffect(() => {
     if (isAnimating && isVisible) {
-      // 初期状態を透明に設定
+      // 開始時は透明に設定
       setOpacity(0);
       
-      // 遅延後にアニメーション開始
+      // 遅延後にアニメーションを開始
       const timer = setTimeout(() => {
-        console.log(`Starting fade-in animation for ${title}`);
+        
         let animationFrameId: number;
         
         const animate = () => {
           setOpacity(prev => {
-            const newOpacity = Math.min(1, prev + 0.02); // 固定速度でフェードイン
+            const newOpacity = Math.min(1, prev + 0.02); // 滑らかなフェードイン
             
-            // アニメーション完了チェック
+            // アニメーションの終了チェック
             if (newOpacity < 1) {
               animationFrameId = requestAnimationFrame(animate);
             } else {
-              console.log(`Fade-in completed for ${title}`);
+              
             }
             
             return newOpacity;
@@ -90,10 +90,10 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
       
       return () => clearTimeout(timer);
     } else if (!isVisible) {
-      // 非表示時は即座に透明
+      // 非表示時は即座に隠す
       setOpacity(0);
     } else if (isVisible && !isAnimating) {
-      // アニメーションなしで表示時は即座に不透明
+      // アニメーションなしで表示の場合は即座に表示
       setOpacity(1);
     }
   }, [isVisible, isAnimating, animationDelay, title]);
@@ -125,7 +125,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
       const imgWidth = img.naturalWidth ?? img.width ?? 1;
       const imgHeight = img.naturalHeight ?? img.height ?? 1;
       const aspectRatio = imgWidth / imgHeight;
-      // VR環境での適切な視聴距離を考慮したサイズ（元の0.75から0.5に縮小）
+      // VR環境での見やすさを考慮してサイズの0.75から0.5に縮小
       const MAX_SIZE = 0.5;
       if (aspectRatio > 1) {
         width = MAX_SIZE;
@@ -140,15 +140,15 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
 
   return (
     <group ref={meshRef} position={position} rotation={rotation}>
-      {/* Three.jsのPlaneジオメトリ */}
+      {/* Three.jsのPlaneオブジェクト*/}
       <Plane args={[width, height]} castShadow>
-        {/* 照明に依存せず常に明るく表示されるマテリアル */}
+        {/* 画像の鮮やかな色調表示のためのマテリアル */}
         <meshBasicMaterial
-          map={texture} // テクスチャマップ
+          map={texture} // テクスチャとして指定
           side={DoubleSide} // 両面表示
-          toneMapped={false} // トーンマッピングを無効化して鮮明に
-          transparent={opacity < 1} // 必要時のみ透明
-          opacity={opacity} // 動的透明度
+          toneMapped={false} // トーンマッピングを無効にして鮮やかに
+          transparent={opacity < 1} // 必要な場合のみ透明
+          opacity={opacity} // 透明度
         />
       </Plane>
       {/* タイトルプレート */}
@@ -193,46 +193,45 @@ function PhotoGallery({ radius, imageUrls, showPhotos, photosAnimating }: PhotoG
   // テクスチャの品質設定を最適化
   useMemo(() => {
     textures.forEach(texture => {
-      // VR用のフィルタリング設定
-      texture.magFilter = LinearFilter; // 拡大時の補間を滑らかに
-      texture.minFilter = LinearFilter; // 縮小時の補間を滑らかに
-      texture.generateMipmaps = true; // ミップマップを生成
+      // VRでのフィルタリング設定
+      texture.magFilter = LinearFilter; // 拡大時の補間アルゴリズム
+      texture.minFilter = LinearFilter; // 縮小時の補間アルゴリズム
+      texture.generateMipmaps = true; // ミップマップ生成
       texture.anisotropy = 16; // 異方性フィルタリングを最大に
     });
   }, [textures]);
 
-  // ギャラリーの動的な半径を計算 (メモ化により再計算を抑制)
+  // ギャラリーの動的半径を計算 (メモ化により再計算を抑制)
   const dynamicRadius = useMemo(() => {
     const totalWidth = textures.reduce((sum, texture) => {
       const aspect = (texture.image?.naturalWidth || 1) / (texture.image?.naturalHeight || 1);
-      // VR用に調整されたサイズ（0.75 → 0.5）
+      // VRに調整したサイズ0.75 → 0.5に
       return sum + (aspect > 1 ? 0.5 : 0.5 * aspect);
     }, 0);
 
-    // 半径が初期半径以上で、かつ写真が重ならないように十分な大きさであることを確認
+    // 最小半径以上で画像が重ならないように動的に半径を確保
     return Math.max(radius, totalWidth / (Math.PI * 2));
   }, [textures, radius]);
 
   return (
     <>
-      {/* 各画像に対してPhotoPlaneを作成 */}
+      {/* 各画像に対してPhotoPlaneを生成*/}
       {textures.map((texture, index) => {
         // 円形配置のための角度と位置を計算
         const angle = (index * Math.PI * 2) / textures.length;
         const x = dynamicRadius * Math.sin(angle);
         const z = dynamicRadius * Math.cos(angle);
-        const rotationY = angle + Math.PI; // 中心に向かって回転
-
+        const rotationY = angle + Math.PI; // 中心を向くように
         return (
           <PhotoPlane
-            key={imageUrls[index]} // Reactのリストレンダリング用のキー
-            position={[x, 1.4, z]} // 平面の位置 (Y軸は高さ1.4に固定)
-            rotation={[0, rotationY, 0]} // 平面の回転
-            texture={texture} // ロード済みのテクスチャを渡す
+            key={imageUrls[index]} // Reactのリコンシリエーション用のキー
+            position={[x, 1.4, z]} // 平面の位置(Y軸は高さ1.4で固定)
+            rotation={[0, rotationY, 0]} // 平面の向き
+            texture={texture} // ロードしたテクスチャを渡す
             title={imageTitles[index]} // タイトルを渡す
             isVisible={showPhotos}
             isAnimating={photosAnimating}
-            animationDelay={index * 200} // 200ms間隔で順次アニメーション
+            animationDelay={index * 200} // 200msずつ順次アニメーション
           />
         );
       })}
@@ -275,7 +274,7 @@ export default function App() {
   const [xrSupported, setXrSupported] = useState(false);
   const [store, setStore] = useState<any>(null);
   
-  // VRガイド機能をフックで管理
+  // VRガイドシステムで管理
   const vrGuide = useVRGuide();
   // stale closureを避けるためにrefで管理
   const vrGuideRef = useRef(vrGuide);
@@ -284,16 +283,16 @@ export default function App() {
   // BGM管理用のref
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // BGM初期化
+  // BGMの初期化
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const bgmAudio = new Audio('/mp3/vfbgm.mp3');
       bgmAudio.loop = true; // ループ再生
-      bgmAudio.volume = 0.3; // 音量を30%に設定
+      bgmAudio.volume = 0.3; // 音量30%に設定
       bgmAudio.preload = 'auto'; // 事前読み込み
       bgmAudioRef.current = bgmAudio;
       
-      console.log('BGM initialized');
+      
     }
     
     return () => {
@@ -311,7 +310,7 @@ export default function App() {
       bgmAudioRef.current.play().catch(error => {
         console.warn('BGM playback failed:', error);
       });
-      console.log('BGM started');
+      
     }
   }, []);
 
@@ -320,21 +319,21 @@ export default function App() {
     if (bgmAudioRef.current) {
       bgmAudioRef.current.pause();
       bgmAudioRef.current.currentTime = 0; // 先頭に戻す
-      console.log('BGM stopped');
+      
     }
   }, []);
 
-  // 毎回のレンダリングでvrGuideの最新の値をrefに格納する
+  // 毎フレームレンダリングでvrGuideの現在のrefに格納する
   useEffect(() => {
     vrGuideRef.current = vrGuide;
   });
 
 
-  // XRサポートの確認とストアの初期化
+  // XRサポート確認とストアの初期化
   useEffect(() => {
     let xrStore: any = null;
     try {
-      // ブラウザ環境でのみXRストアを作成
+      // ブラウザ環境でのXRストア作成
       if (typeof window !== 'undefined') {
         // WebXR APIの利用可能性を確認
         if ('navigator' in window && 'xr' in navigator && navigator.xr) {
@@ -344,19 +343,19 @@ export default function App() {
                 xrStore = createXRStore();
                 setStore(xrStore);
                 setXrSupported(true);
-                console.log('XR initialized successfully');
+                
 
                 // XRセッション状態の変更を監視
                 xrStore.subscribe((state: any) => {
                   if (state.session && !isVRActiveRef.current) {
-                    // VRセッション開始
+                    // VRセッションが開始
                     isVRActiveRef.current = true;
-                    console.log('Starting VR guide...');
-                    playBGM(); // BGM再生開始
+                    
+                    playBGM(); // BGM開始
                     setTimeout(() => vrGuideRef.current.startGuide(), 100);
                   } else if (!state.session && isVRActiveRef.current) {
-                    // VRセッション終了
-                    console.log('Ending VR session, stopping guide...');
+                    // VRセッションが終了
+                    
                     isVRActiveRef.current = false;
                     stopBGM(); // BGM停止
                     vrGuideRef.current.endGuide();
@@ -386,17 +385,17 @@ export default function App() {
 
     return () => {
       // クリーンアップ
-      console.log('Cleaning up XR store and audio...');
       
-      // BGMを停止
+      
+      // BGMの停止
       stopBGM();
       
-      // VRガイドを終了
+      // VRガイド終了
       if(vrGuideRef.current) {
         vrGuideRef.current.endGuide();
       }
       
-      // XRストアを破棄
+      // XRストアの破棄
       if (xrStore) {
         try {
           xrStore.destroy?.();
@@ -405,8 +404,7 @@ export default function App() {
         }
       }
     };
-  }, []); // このuseEffectはマウント時に一度だけ実行
-
+  }, []); // このuseEffectは一度だけ実行
   const wallHeight = GALLERY_CONFIG.WALL.HEIGHT;
   const wallRadius = GALLERY_CONFIG.WALL.RADIUS;
   const segments = GALLERY_CONFIG.WALL.SEGMENTS;
@@ -442,7 +440,7 @@ export default function App() {
           showPhotos={vrGuide.showPhotos}
           photosAnimating={vrGuide.photosAnimating}
         />
-        {/* VRガイド表示 */}
+        {/* VRガイド表示*/}
         <VRGuideText visible={vrGuide.showGuide} text={vrGuide.currentText} />
         <VRGuideSkipButton visible={vrGuide.showGuide} onSkip={vrGuide.skipGuide} />
       </Suspense>
@@ -452,13 +450,13 @@ export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
       <Canvas camera={{ position: [0, 1.6, 5], fov: 75 }} flat dpr={[1, 2]}>
-        {/* XRサポートがある場合のみXRコンポーネントを使用 */}
+        {/* XRがサポートされている場合のみXRコンポーネントを使用 */}
         {xrSupported && store ? (
           <XR store={store}>
             <SceneContent />
           </XR>
         ) : (
-          /* 通常モード（XRなし） */
+          /* 通常モード(XRなし)*/
           <>
             <SceneContent />
             <OrbitControls />

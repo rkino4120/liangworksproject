@@ -55,10 +55,10 @@ const CONSTANTS = {
     GALLERY_RADIUS: 0.75,
     PANEL_WIDTH: 0.5,
     GROUND_SIZE: 10,
-    SHADOW_MAP_SIZE: 512, // 影マップサイズを半分に
+    SHADOW_MAP_SIZE: 512, // 影のマップサイズ
     PHOTOS_PER_PAGE: 6, // 1ページあたりの写真数を削減
     ANIMATION_DURATION_FRAMES: 45, // アニメーション時間を短縮
-    ANIMATION_Y_OFFSET: 0.5, // Y軸オフセットを削減
+    ANIMATION_Y_OFFSET: 0.5, // Y軸オフセット量
     PHOTO_Y_POSITION: 1.3,
 } as const;
 
@@ -73,7 +73,7 @@ const COLORS = {
     CLEAR: new Color4(0.05, 0.05, 0.1, 1),
 } as const;
 
-// ===== アニメーション設定 =====
+// ===== イージング設定 =====
 const EASING = {
     IN_CUBIC: (() => {
         const ease = new CubicEase();
@@ -92,7 +92,7 @@ const EASING = {
     })(),
 } as const;
 
-// ===== デフォルトデータ =====
+// ===== サンプルデータ =====
 const DEFAULT_GALLERY_DATA: GalleryDataItem[] = Array.from({ length: 16 }, (_, i) => ({
     imageUrl: `/images/photo${String(i + 1).padStart(2, '0')}.jpg`,
     title: `作品 ${String(i + 1).padStart(2, '0')}`,
@@ -297,7 +297,7 @@ const XRSceneManager: React.FC<XRSceneManagerProps> = React.memo(({ onGalleryRot
     return null;
 });
 
-// ===== メインコンポーネント =====
+// ===== メインシーンコンポーネント =====
 const CirclePlanesScene: React.FC = () => {
     const [boxes, setBoxes] = useState<BoxInfo[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
@@ -313,7 +313,7 @@ const CirclePlanesScene: React.FC = () => {
     const { isAudioPlaying, toggleAudio } = useAudioManager();
     const { runAnimation } = useAnimationManager(sceneRef);
 
-    // 計算値のメモ化
+    // 計算のメモ化
     const totalPages = useMemo(() => {
         return galleryData.length > 0 ? Math.ceil(galleryData.length / CONSTANTS.PHOTOS_PER_PAGE) : 1;
     }, [galleryData.length]);
@@ -465,10 +465,10 @@ const CirclePlanesScene: React.FC = () => {
 
         const onAnimationComplete = isLast ? () => setIsPageChanging(false) : undefined;
         
-        // 位置のアニメーションを開始
+        // 位置アニメーション
         runAnimation(node, 'position.y', node.position.y, finalPosition.y, EASING.OUT_QUAD, onAnimationComplete);
         
-        // フェードインを少し遅らせて開始
+        // フェードインアニメーション
         setTimeout(() => {
             if (photoMesh) runAnimation(photoMesh, 'visibility', 0, 1, EASING.OUT_QUAD);
             if (titleBgMesh) runAnimation(titleBgMesh, 'visibility', 0, 1, EASING.OUT_QUAD);
@@ -568,20 +568,17 @@ const CirclePlanesScene: React.FC = () => {
                     {/* BGM Button */}
                     <plane
                         name="audio-button-text"
-                        width={0.15} height={0.08}
-                        position={POSITIONS.AUDIO_BUTTON}
-                        onCreated={(mesh: Mesh) => {
+                        width={0.15} height={0.08} position={POSITIONS.AUDIO_BUTTON} onCreated={(mesh: Mesh) => {
                             if (!sceneRef.current) return;
                             mesh.actionManager = new ActionManager(sceneRef.current);
                             mesh.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickTrigger, handleAudioButtonClick));
-                        }}
-                    >
-                        <advancedDynamicTexture name="audio-button-text-texture" height={128} width={256} createForParentMesh>
-                            <rectangle name="text-background" cornerRadius={10} background={isAudioPlaying ? "rgba(102, 204, 255, 0.7)" : "rgba(128, 128, 128, 0.7)"}>
-                                <textBlock name="audio-button-label" text={isAudioPlaying ? "♪ BGM ON" : "🔇 BGM OFF"} color="white" fontSize={28} fontWeight="bold"/>
-                            </rectangle>
-                        </advancedDynamicTexture>
-                    </plane>
+                        }}>
+                            <advancedDynamicTexture name="audio-button-text-texture" height={128} width={256} createForParentMesh>
+                                <rectangle name="text-background" cornerRadius={10} background={isAudioPlaying ? "rgba(102, 204, 255, 0.7)" : "rgba(128, 128, 128, 0.7)"}>
+                                    <textBlock name="audio-button-label" text={isAudioPlaying ? "🎵 BGM ON" : "🎵 BGM OFF"} color="white" fontSize={28} fontWeight="bold"/>
+                                </rectangle>
+                            </advancedDynamicTexture>
+                        </plane>
 
                     {/* Page Navigation UI */}
                     <transformNode name="page-nav-parent" position={POSITIONS.PAGE_NAV}>
@@ -603,15 +600,15 @@ const CirclePlanesScene: React.FC = () => {
 };
 
 const App = React.memo(function App() {
-    console.log('App component rendered');
+    
     
     // カスタムフックでページのmeta情報を設定
     usePageMeta({
-        title: '円形・回転式（BGM付き） | Babylon.js | VR Galleries',
-        description: 'Babylon.jsで作成されたVR写真ギャラリー。3D空間で写真を鑑賞し、音楽と共にインタラクティブな体験をお楽しみください。',
-        keywords: 'Babylon.js, VR, 写真ギャラリー, 3D, WebGL, インタラクティブ, 音楽',
-        ogTitle: '円形・回転式（BGM付き） | Babylon.js | VR Galleries',
-        ogDescription: 'Babylon.jsで作成されたVR写真ギャラリー。3D空間での新しい写真鑑賞体験。',
+        title: '円形回転型（BGM付き）| Babylon.js | VR Galleries',
+        description: 'Babylon.jsを使ったVRフォトギャラリー。3D空間での写真鑑賞を、音楽と共にインスタレーション体験でお楽しみください。',
+        keywords: 'Babylon.js, VR, フォトギャラリー, 3D, WebGL, インスタレーション, 音楽',
+        ogTitle: '円形回転型（BGM付き）| Babylon.js | VR Galleries',
+        ogDescription: 'Babylon.jsを使ったVRフォトギャラリー。3D空間での写真鑑賞体験。',
         ogType: 'website',
         ogImage: '/images/babylonjs-gallery-preview.jpg'
     });

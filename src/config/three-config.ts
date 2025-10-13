@@ -1,4 +1,4 @@
-// Three.js関連の定数と設定値
+// Three.jsの設定定数とヘルパー
 
 import type { Position3D } from '../types/three-fiber';
 
@@ -8,9 +8,9 @@ export const LIGHTING_CONFIG = {
     INTENSITY: 0.05, // 環境光の基本強度
   },
   HEMISPHERE: {
-    SKY_COLOR: '#ffffff', // 上半球の色（空の色）
-    GROUND_COLOR: '#404040', // 下半球の色（地面の色）
-    INTENSITY: 0.6, // 写真を明るく見せるための強度
+    SKY_COLOR: '#ffffff', // 上方向の光（空の色）
+    GROUND_COLOR: '#404040', // 下方向の光（地面の色）
+    INTENSITY: 0.6, // 全体的な見やすさの強度
   },
   SPOT: {
     POSITION: [0, 4, 0] as Position3D,
@@ -18,7 +18,7 @@ export const LIGHTING_CONFIG = {
     INTENSITY: 500,
     COLOR: '#FFF7E1',
     CAST_SHADOW: true,
-    PENUMBRA: 0.5, // 縁のボケ効果（0: シャープ、1: 完全にボケる）
+    PENUMBRA: 0.5, // 縁のボケ具合: 0=シャープ, 1=完全にぼかし
   },
   RECT_AREA: {
     ARGS: [0xffffff, 5, 0.5, 2] as const,
@@ -46,11 +46,11 @@ export const GALLERY_CONFIG = {
     RADIUS: 1.1,
   },
   PHOTO: {
-    RADIUS: 0.9, // 写真の円形配置の半径（値を大きくすると円が大きくなる）
+    RADIUS: 0.9, // 円形配置の半径（値を大きくすると円が大きくなる）
   },
 } as const;
 
-// 型安全なバリデーション関数
+// 安全なバリデーション関数
 export const validatePosition = (position: unknown): Position3D => {
   if (Array.isArray(position) && position.length === 3 && position.every(n => typeof n === 'number')) {
     return position as Position3D;
@@ -72,8 +72,8 @@ export const validateIntensity = (intensity: number): number => {
   return intensity;
 };
 
-// 開発環境設定
+// 開発者設定
 export const DEV_CONFIG = {
-  // 開発環境でのデバッグ情報表示
+  // 開発時のデバッグ情報表示
   SHOW_DEBUG_INFO: process.env.NODE_ENV === 'development',
 } as const;

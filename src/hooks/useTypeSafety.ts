@@ -44,7 +44,7 @@ export const useTypeSafeLighting = (
   }, [position, angle, intensity]);
 };
 
-// エラー境界コンポーネント用の型
+// エラーコンポーネントの型定義
 export interface ThreeJSErrorInfo {
   componentStack: string;
   errorBoundary?: string;
@@ -54,7 +54,7 @@ export interface ThreeJSError extends Error {
   componentStack?: string;
 }
 
-// Three.js固有のエラーハンドラー
+// Three.js専用エラーハンドラー
 export const useThreeJSErrorHandler = () => {
   return useCallback((error: ThreeJSError, errorInfo: ThreeJSErrorInfo) => {
     console.error('Three.js Component Error:', {
@@ -63,7 +63,7 @@ export const useThreeJSErrorHandler = () => {
       componentStack: errorInfo.componentStack,
     });
     
-    // 本番環境では、エラー報告サービスに送信
+    // 本番環境ではエラー監視サービスに送信
     if (process.env.NODE_ENV === 'production') {
       // 例: Sentry.captureException(error, { extra: errorInfo });
     }

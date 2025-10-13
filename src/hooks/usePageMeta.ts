@@ -13,15 +13,15 @@ interface MetaOptions {
 
 export const usePageMeta = (options: MetaOptions) => {
   useEffect(() => {
-    console.log('usePageMeta called with:', options);
     
-    // DOM要素が利用可能になるのを待つ
+    
+    // DOM要素が利用可能になるまで待つ
     const timer = setTimeout(() => {
-      console.log('Setting page meta...');
+      
       
       // タイトル設定
       document.title = options.title;
-      console.log('Title set to:', options.title);
+      
 
       // meta description
       let metaDescription = document.querySelector('meta[name="description"]');
@@ -102,7 +102,7 @@ export const usePageMeta = (options: MetaOptions) => {
       }
       twitterCardMeta.setAttribute('content', 'summary_large_image');
       
-      console.log('Page meta set successfully');
+      
     }, 100);
 
     return () => clearTimeout(timer);
