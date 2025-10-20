@@ -24,6 +24,7 @@ declare module '@react-three/fiber' {
       visible?: boolean;
       name?: string;
       children?: React.ReactNode;
+      ref?: React.Ref<any>;
     };
     
     cylinderGeometry: {

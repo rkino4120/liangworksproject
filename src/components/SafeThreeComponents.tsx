@@ -6,7 +6,6 @@ import { Position3D, SafeSpotLightProps, SafeMeshProps } from '../types/three-fi
 // 安全なSpotLightコンポーネント
 export const SafeSpotLight: React.FC<SafeSpotLightProps> = (props) => {
   return (
-    // @ts-expect-error Three.js Fiberの型定義の制限を回避
     <spotLight {...props} />
   );
 };
@@ -14,7 +13,6 @@ export const SafeSpotLight: React.FC<SafeSpotLightProps> = (props) => {
 // 安全なMeshコンポーネント
 export const SafeMesh: React.FC<SafeMeshProps> = (props) => {
   return (
-    // @ts-expect-error Three.js Fiberの型定義の制限を回避
     <mesh {...props} />
   );
 };

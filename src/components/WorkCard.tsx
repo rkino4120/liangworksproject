@@ -1,10 +1,8 @@
 'use client';
 
 import { Work } from '@/types/work';
-import { categoryConfig, getCategoryValue, getCategoryName } from '@/lib/category-utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { memo } from 'react';
@@ -14,9 +12,6 @@ interface WorkCardProps {
 }
 
 const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
-  const categoryValue = getCategoryValue(work.category);
-  const categoryName = getCategoryName(work.category);
-
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
       {work.thumbnail ? (
@@ -37,10 +32,7 @@ const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
       )}
       
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <Badge variant="secondary" className="text-xs">
-            {categoryName || categoryValue}
-          </Badge>
+        <div className="flex items-center justify-end">
           <time className="text-xs text-slate-500">
             {new Date(work.publishedAt).toLocaleDateString('ja-JP')}
           </time>

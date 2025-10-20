@@ -90,14 +90,6 @@ export const useWorks = (): UseWorksResult => {
           title: 'Interactive 3D Scene',
           description: 'Three.jsを使ったインタラクティブな3Dシーン。マウスの動きに応じてオブジェクトが回転します。',
           url: 'https://example.com/threejs-demo1',
-          category: {
-            id: 'threejs',
-            name: 'Three.js',
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-            publishedAt: '2024-01-01T00:00:00.000Z',
-            revisedAt: '2024-01-01T00:00:00.000Z'
-          },
           thumbnail: {
             url: '/next.svg',
             width: 400,
@@ -110,17 +102,9 @@ export const useWorks = (): UseWorksResult => {
         },
         {
           id: '2',
-          title: 'Physics Simulation',
-          description: 'Babylon.jsを使った物理シミュレーション。重力や衝突判定を含む複雑な物理演算を実現。',
-          url: 'https://example.com/babylonjs-demo1',
-          category: {
-            id: 'babylonjs',
-            name: 'Babylon.js',
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-            publishedAt: '2024-01-01T00:00:00.000Z',
-            revisedAt: '2024-01-01T00:00:00.000Z'
-          },
+          title: 'VR Gallery Experience',
+          description: 'Three.jsとWebXRを使ったVRギャラリー体験。3D空間での写真鑑賞を楽しめます。',
+          url: 'https://example.com/threejs-demo2',
           thumbnail: {
             url: '/vercel.svg',
             width: 400,

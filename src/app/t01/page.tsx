@@ -8,11 +8,12 @@ import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { Plane, OrbitControls, Circle, useTexture, Box, Text } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { HandleTarget, Handle } from '@react-three/handle';
-import { DoubleSide, Texture, TextureLoader, RepeatWrapping, LinearFilter } from 'three';
-import { SafeSpotLight, SafeMesh, createPosition, degreesToRadians } from '../../../components/SafeThreeComponents';
-import { LIGHTING_CONFIG, GALLERY_CONFIG } from '../../../config/three-config';
-import { VRGuideText, VRGuideSkipButton } from '../../../components/VRGuide';
-import { useVRGuide } from '../../../hooks/useVRGuide';
+import { DoubleSide, Texture, TextureLoader, RepeatWrapping, LinearFilter, Mesh, Group } from 'three';
+import * as THREE from 'three';
+import { SafeSpotLight, SafeMesh, createPosition, degreesToRadians } from '../../components/SafeThreeComponents';
+import { LIGHTING_CONFIG, GALLERY_CONFIG } from '../../config/three-config';
+import { VRGuideText, VRGuideSkipButton } from '../../components/VRGuide';
+import { useVRGuide } from '../../hooks/useVRGuide';
 
 const imageUrls = [
   '/images/photo01.jpg',
@@ -46,10 +47,9 @@ interface PhotoPlaneProps {
   isAnimating: boolean; // アニメーション中
   animationDelay: number; // アニメーションの遅延ミリ秒
 }
-
 function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating, animationDelay }: PhotoPlaneProps) {
-  const meshRef = useRef<any>(null);
-  const titleMeshRef = useRef<any>(null);
+  const meshRef = useRef<Group>(null);
+  const titleMeshRef = useRef<THREE.Mesh>(null);
   const [opacity, setOpacity] = useState(isVisible && !isAnimating ? 1 : 0);
 
   // アニメーション管理を簡略化
@@ -100,13 +100,37 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
 
   // マテリアルの透明度を更新
   useEffect(() => {
-    if (meshRef.current?.material) {
-      meshRef.current.material.transparent = opacity < 1;
-      meshRef.current.material.opacity = opacity;
+    // グループ内の最初のメッシュ（Plane）を探してマテリアルを更新する
+    const planeMesh = meshRef.current?.children?.find((child) => {
+      return (child as THREE.Mesh).type === 'Mesh' && (child as THREE.Mesh).material;
+    }) as THREE.Mesh | undefined;
+  
+    if (planeMesh?.material) {
+      if (Array.isArray(planeMesh.material)) {
+        planeMesh.material.forEach((mat) => {
+          if (mat instanceof THREE.MeshBasicMaterial) {
+            mat.transparent = opacity < 1;
+            mat.opacity = opacity;
+          }
+        });
+      } else if (planeMesh.material instanceof THREE.MeshBasicMaterial) {
+        planeMesh.material.transparent = opacity < 1;
+        planeMesh.material.opacity = opacity;
+      }
     }
+    
     if (titleMeshRef.current?.material) {
-      titleMeshRef.current.material.transparent = opacity < 1;
-      titleMeshRef.current.material.opacity = opacity;
+      if (Array.isArray(titleMeshRef.current.material)) {
+        titleMeshRef.current.material.forEach((mat) => {
+          if (mat instanceof THREE.MeshStandardMaterial) {
+            mat.transparent = opacity < 1;
+            mat.opacity = opacity;
+          }
+        });
+      } else if (titleMeshRef.current.material instanceof THREE.MeshStandardMaterial) {
+        titleMeshRef.current.material.transparent = opacity < 1;
+        titleMeshRef.current.material.opacity = opacity;
+      }
     }
   }, [opacity]);
 
@@ -154,7 +178,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
       {/* タイトルプレート */}
       {title && (
         <group position={[0, -height / 2 - 0.12, 0]}>
-          <mesh ref={titleMeshRef} name={`title-${title}`}>
+          <mesh ref={titleMeshRef as any} name={`title-${title}`}>
             <boxGeometry args={[0.2, 0.06, 0.005]} />
             <meshStandardMaterial 
               color="#bbb" 
@@ -272,7 +296,7 @@ function Floor() {
 
 export default function App() {
   const [xrSupported, setXrSupported] = useState(false);
-  const [store, setStore] = useState<any>(null);
+  const [store, setStore] = useState<ReturnType<typeof createXRStore> | null>(null);
   
   // VRガイドシステムで管理
   const vrGuide = useVRGuide();
@@ -331,7 +355,7 @@ export default function App() {
 
   // XRサポート確認とストアの初期化
   useEffect(() => {
-    let xrStore: any = null;
+    let xrStore: ReturnType<typeof createXRStore> | null = null;
     try {
       // ブラウザ環境でのXRストア作成
       if (typeof window !== 'undefined') {
@@ -346,7 +370,7 @@ export default function App() {
                 
 
                 // XRセッション状態の変更を監視
-                xrStore.subscribe((state: any) => {
+                xrStore.subscribe((state) => {
                   if (state.session && !isVRActiveRef.current) {
                     // VRセッションが開始
                     isVRActiveRef.current = true;

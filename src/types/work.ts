@@ -4,14 +4,6 @@ export type Work = {
   title: string;
   description: string;
   url: string;
-  category: {
-    id: string;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-    publishedAt: string;
-    revisedAt: string;
-  };
   thumbnail?: {
     url: string;
     height: number;
