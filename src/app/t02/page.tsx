@@ -24,6 +24,15 @@ interface GalleryDataItem {
     title: string;
 }
 
+interface XRGamepadAxis {
+    xAxis?: number;
+    yAxis?: number;
+}
+
+interface XRGamepadButton {
+    state?: 'pressed' | 'released' | 'touched';
+}
+
 // ===== 定数 =====
 const CONSTANTS = {
     GALLERY_RADIUS: 0.75,
@@ -152,7 +161,7 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress }) => {
             </Plane>
             
             {/* タイトルプレート背景 */}
-            <mesh ref={plateMeshRef as any} position={[0, plateY, -0.01]} castShadow>
+            <mesh ref={plateMeshRef} position={[0, plateY, -0.01]} castShadow>
                 <boxGeometry args={[info.width + 0.05, plateHeight, 0.01]} />
                 <meshStandardMaterial color="#000000" transparent opacity={0.7} />
             </mesh>
@@ -230,7 +239,7 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
         if (leftController?.gamepad?.['xr-standard-thumbstick']) {
             const thumbstick = leftController.gamepad['xr-standard-thumbstick'];
             if (thumbstick && typeof thumbstick === 'object' && 'xAxis' in thumbstick) {
-                const xAxis = (thumbstick as any).xAxis || 0;
+                const xAxis = (thumbstick as XRGamepadAxis).xAxis || 0;
                 if (Math.abs(xAxis) > 0.1) {
                     onRotate(-xAxis * 0.05);
                 }
@@ -241,7 +250,7 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
         if (leftController?.gamepad?.['xr-standard-trigger']) {
             const trigger = leftController.gamepad['xr-standard-trigger'];
             const pressed = trigger && typeof trigger === 'object' && 'state' in trigger ? 
-                (trigger as any).state === 'pressed' : false;
+                (trigger as XRGamepadButton).state === 'pressed' : false;
             
             if (pressed && !prevButtonStates.current.leftTrigger) {
                 onToggleAudio();
@@ -252,7 +261,7 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
         if (rightController?.gamepad?.['a-button']) {
             const aButton = rightController.gamepad['a-button'];
             const pressed = aButton && typeof aButton === 'object' && 'state' in aButton ? 
-                (aButton as any).state === 'pressed' : false;
+                (aButton as XRGamepadButton).state === 'pressed' : false;
             
             if (pressed && !prevButtonStates.current.rightA) {
                 onNextPage();

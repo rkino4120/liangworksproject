@@ -1,6 +1,6 @@
 // Three.js Fiber 型安全性を向上させるための型定義
 
-import { Vector3Tuple, Texture } from 'three';
+import { Vector3Tuple, Texture, Mesh } from 'three';
 
 declare module '@react-three/fiber' {
   interface ThreeElements {
@@ -24,7 +24,7 @@ declare module '@react-three/fiber' {
       visible?: boolean;
       name?: string;
       children?: React.ReactNode;
-      ref?: React.Ref<any>;
+      ref?: React.Ref<Mesh>;
     };
     
     cylinderGeometry: {
