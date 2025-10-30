@@ -132,7 +132,8 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgr
     const plateMeshRef = useRef<THREE.Mesh>(null);
     const texture = useLoader(TextureLoader, info.imageUrl);
     const [dimensions, setDimensions] = useState({ width: info.width, height: info.height });
-    const prevImageUrlRef = useRef(info.imageUrl);
+    const prevImageUrlRef = useRef<string>('');
+    const hasNotifiedRef = useRef(false);
 
     // テクスチャ設定とサイズ計算を一度だけ実行
     useMemo(() => {
@@ -149,16 +150,19 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgr
             const height = width / aspectRatio;
             setDimensions({ width, height });
             
-            // 画像URLが変わったら新しい読み込みとして通知
+            // 画像URLが変わったら読み込み完了を通知
             if (prevImageUrlRef.current !== info.imageUrl) {
                 prevImageUrlRef.current = info.imageUrl;
-                onLoaded?.();
-            } else if (!prevImageUrlRef.current) {
-                // 初回読み込み
+                hasNotifiedRef.current = false;
+            }
+            
+            // まだ通知していない場合のみ通知
+            if (!hasNotifiedRef.current) {
+                hasNotifiedRef.current = true;
                 onLoaded?.();
             }
         }
-    }, [texture, onLoaded, info.imageUrl]);
+    }, [texture, texture.image, onLoaded, info.imageUrl]);
 
     // useFrameでアニメーションを適用 - 地面下から上昇する仕様
     useFrame(() => {
@@ -398,11 +402,13 @@ VREnterButton.displayName = 'VREnterButton';
 // ===== メインシーンコンポーネント =====
 const CirclePlanesScene: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(0);
+    const [displayPage, setDisplayPage] = useState(0); // 実際に表示するページ
     const [galleryRotationY, setGalleryRotationY] = useState(0);
-    const [animationProgress, setAnimationProgress] = useState(0);
+    const [animationProgress, setAnimationProgress] = useState(1); // 初回は1（表示状態）
     const [isAnimating, setIsAnimating] = useState(false);
     const [loadedImagesCount, setLoadedImagesCount] = useState(0);
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
+    const isFirstRenderRef = useRef(true);
     
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
@@ -442,9 +448,9 @@ const CirclePlanesScene: React.FC = () => {
     );
 
     const currentPhotos = useMemo(() => {
-        const start = currentPage * CONSTANTS.PHOTOS_PER_PAGE;
+        const start = displayPage * CONSTANTS.PHOTOS_PER_PAGE;
         return galleryData.slice(start, start + CONSTANTS.PHOTOS_PER_PAGE);
-    }, [galleryData, currentPage]);
+    }, [galleryData, displayPage]);
 
     // 写真情報の生成
     const photoInfos = useMemo((): PhotoInfo[] => {
@@ -485,7 +491,7 @@ const CirclePlanesScene: React.FC = () => {
     useEffect(() => {
         setLoadedImagesCount(0);
         setAllImagesLoaded(false);
-    }, [currentPage]);
+    }, [displayPage]);
 
     // アニメーション進行管理 - requestAnimationFrameを使用
     useEffect(() => {
@@ -499,6 +505,11 @@ const CirclePlanesScene: React.FC = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(1, elapsed / duration);
             setAnimationProgress(progress);
+            
+            // progress が 0.5 に達したら、表示するページを切り替える
+            if (progress >= 0.5 && displayPage !== currentPage) {
+                setDisplayPage(currentPage);
+            }
             
             if (progress < 1) {
                 animationFrameId = requestAnimationFrame(animate);
@@ -514,13 +525,21 @@ const CirclePlanesScene: React.FC = () => {
                 cancelAnimationFrame(animationFrameId);
             }
         };
-    }, [isAnimating]);
+    }, [isAnimating, currentPage, displayPage]);
 
     // ページ変更時にアニメーション開始
     useEffect(() => {
-        setAnimationProgress(0);
-        setIsAnimating(true);
-    }, [currentPage]);
+        // 初回レンダリング時はアニメーションをスキップ
+        if (isFirstRenderRef.current) {
+            isFirstRenderRef.current = false;
+            return;
+        }
+        
+        if (currentPage !== displayPage) {
+            setAnimationProgress(0);
+            setIsAnimating(true);
+        }
+    }, [currentPage, displayPage]);
 
     const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
