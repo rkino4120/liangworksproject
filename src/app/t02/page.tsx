@@ -40,7 +40,9 @@ const CONSTANTS = {
     GROUND_SIZE: 10,
     PHOTOS_PER_PAGE: 6,
     PHOTO_Y_POSITION: 1.3,
-    ANIMATION_DURATION: 1.0, // 秒
+    ANIMATION_DURATION: 1.2, // 秒（フェードアウト+フェードイン）
+    FADE_OUT_DURATION: 0.5, // フェードアウト時間
+    FADE_IN_DURATION: 0.7, // フェードイン時間
     ANIMATION_Y_OFFSET: 0.5,
 } as const;
 
@@ -114,20 +116,37 @@ const useAudioManager = () => {
 interface PhotoPlaneProps {
     info: PhotoInfo;
     animationProgress: number;
+    onLoaded?: () => void;
 }
 
-const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress }) => {
+const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress, onLoaded }) => {
     const groupRef = useRef<THREE.Group>(null);
     const photoMeshRef = useRef<THREE.Mesh>(null);
     const plateMeshRef = useRef<THREE.Mesh>(null);
     const texture = useLoader(TextureLoader, info.imageUrl);
+    const [dimensions, setDimensions] = React.useState({ width: info.width, height: info.height });
+    const loadedRef = useRef(false);
 
     useEffect(() => {
         texture.magFilter = LinearFilter;
         texture.minFilter = LinearFilter;
         texture.generateMipmaps = true;
         texture.anisotropy = 16;
-    }, [texture]);
+        
+        // 画像の実際の縦横比を取得して適用
+        if (texture.image) {
+            const aspectRatio = texture.image.width / texture.image.height;
+            const width = CONSTANTS.PANEL_WIDTH;
+            const height = width / aspectRatio;
+            setDimensions({ width, height });
+            
+            // 画像が読み込まれたことを通知（一度だけ）
+            if (!loadedRef.current && onLoaded) {
+                loadedRef.current = true;
+                onLoaded();
+            }
+        }
+    }, [texture, onLoaded]);
 
     // アニメーションの適用
     useEffect(() => {
@@ -151,18 +170,18 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress }) => {
     }, [animationProgress, info.position]);
 
     const plateHeight = 0.1;
-    const plateY = -info.height / 2 - 0.05 - plateHeight / 2;
+    const plateY = -dimensions.height / 2 - 0.05 - plateHeight / 2;
 
     return (
         <group ref={groupRef} position={info.position} rotation={info.rotation}>
             {/* 写真プレーン */}
-            <Plane ref={photoMeshRef} args={[info.width, info.height]} castShadow>
+            <Plane ref={photoMeshRef} args={[dimensions.width, dimensions.height]} castShadow>
                 <meshBasicMaterial map={texture} side={DoubleSide} toneMapped={false} />
             </Plane>
             
             {/* タイトルプレート背景 */}
             <mesh ref={plateMeshRef} position={[0, plateY, -0.01]} castShadow>
-                <boxGeometry args={[info.width + 0.05, plateHeight, 0.01]} />
+                <boxGeometry args={[dimensions.width + 0.05, plateHeight, 0.01]} />
                 <meshStandardMaterial color="#000000" transparent opacity={0.7} />
             </mesh>
 
@@ -173,7 +192,7 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress }) => {
                 color="white"
                 anchorX="center"
                 anchorY="middle"
-                maxWidth={info.width}
+                maxWidth={dimensions.width}
             >
                 {info.title}
             </Text>
@@ -186,16 +205,18 @@ interface GalleryProps {
     photos: PhotoInfo[];
     rotationY: number;
     animationProgress: number;
+    onPhotoLoaded?: () => void;
 }
 
-const Gallery: React.FC<GalleryProps> = ({ photos, rotationY, animationProgress }) => {
+const Gallery: React.FC<GalleryProps> = ({ photos, rotationY, animationProgress, onPhotoLoaded }) => {
     return (
         <group rotation={[0, rotationY, 0]}>
             {photos.map((photo, index) => (
                 <PhotoPlane 
                     key={`${photo.imageUrl}-${index}`} 
                     info={photo} 
-                    animationProgress={animationProgress - index * 0.1} 
+                    animationProgress={animationProgress - index * 0.1}
+                    onLoaded={onPhotoLoaded}
                 />
             ))}
         </group>
@@ -305,6 +326,8 @@ const CirclePlanesScene: React.FC = () => {
     const [galleryRotationY, setGalleryRotationY] = useState(0);
     const [animationProgress, setAnimationProgress] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+    const [allImagesLoaded, setAllImagesLoaded] = useState(false);
     
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio } = useAudioManager();
@@ -351,12 +374,30 @@ const CirclePlanesScene: React.FC = () => {
                 imageUrl: item.imageUrl,
                 title: item.title,
                 position: [x, height / 2 + CONSTANTS.PHOTO_Y_POSITION, z],
-                rotation: [0, -angle + Math.PI / 2, 0],
+                rotation: [0, -angle - Math.PI / 2, 0],
                 width,
                 height,
             };
         });
     }, [currentPhotos]);
+
+    // 画像読み込み完了の監視
+    const handlePhotoLoaded = useCallback(() => {
+        setLoadedImagesCount(prev => prev + 1);
+    }, []);
+
+    // すべての画像が読み込まれたかチェック
+    useEffect(() => {
+        if (currentPhotos.length > 0 && loadedImagesCount >= currentPhotos.length) {
+            setAllImagesLoaded(true);
+        }
+    }, [loadedImagesCount, currentPhotos.length]);
+
+    // ページ変更時に読み込みカウントをリセット
+    useEffect(() => {
+        setLoadedImagesCount(0);
+        setAllImagesLoaded(false);
+    }, [currentPage]);
 
     // アニメーション進行管理
     useEffect(() => {
@@ -403,7 +444,26 @@ const CirclePlanesScene: React.FC = () => {
                 totalPages={totalPages}
             />
             
-            {xrSupported && store && <button onClick={() => store.enterVR()} className="absolute top-4 right-4 z-10 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold">Enter VR</button>}
+            {/* VR Enter Button - 中央に大きく表示 */}
+            {xrSupported && store && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                    <button 
+                        onClick={() => allImagesLoaded && store.enterVR()} 
+                        disabled={!allImagesLoaded}
+                        className={`pointer-events-auto px-12 py-6 rounded-2xl font-bold text-2xl shadow-2xl transform transition-all duration-300 ${
+                            allImagesLoaded 
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white hover:scale-110 hover:shadow-green-500/50 cursor-pointer'
+                                : 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                        }`}
+                    >
+                        {allImagesLoaded ? (
+                            <>🥽 Enter VR Mode</>
+                        ) : (
+                            <>⏳ Loading Images... ({loadedImagesCount}/{currentPhotos.length})</>
+                        )}
+                    </button>
+                </div>
+            )}
             
             <Canvas shadows camera={{ position: [0, 1.6, 0], near: 0.1, far: 100 }}>
                 {xrSupported && store && (
@@ -437,6 +497,7 @@ const CirclePlanesScene: React.FC = () => {
                         photos={photoInfos} 
                         rotationY={galleryRotationY}
                         animationProgress={animationProgress}
+                        onPhotoLoaded={handlePhotoLoaded}
                     />
                 </Suspense>
                 

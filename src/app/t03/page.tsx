@@ -18,7 +18,7 @@ const store = createXRStore({ emulate: { syntheticEnvironment: false } });
 
 export default function App() {
   return (
-    <div className="w-screen h-screen bg-black">
+    <div className="w-screen h-screen bg-black relative">
       <Canvas
         shadows="soft"
         camera={{ position: [-0.5, 0.5, 0.5] }}
@@ -46,6 +46,40 @@ export default function App() {
         </Physics>
         <OrbitControls />
       </Canvas>
+      {/* VRモード入室ボタンを中央に配置 */}
+      <button
+        onClick={() => store.enterVR()}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          padding: '24px 80px',
+          fontSize: '24px',
+          fontWeight: '500',
+          letterSpacing: '0.4em',
+          color: '#ffffff',
+          backgroundColor: 'transparent',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          zIndex: 1000,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(0)';
+        }}
+      >
+        ENTER VR
+      </button>
     </div>
   );
 }
@@ -129,14 +163,46 @@ function TexturedPlane({
   const texture = useTexture(texturePath);
   const matRefs = useRef<MeshStandardMaterial>(null);
   const [isGrabbed, setIsGrabbed] = useState(false);
+  
+  // 画像の縦横比を計算
+  const { width, height } = useMemo(() => {
+    if (texture.image) {
+      const img = texture.image;
+      const imgWidth = img.naturalWidth || img.width || 1;
+      const imgHeight = img.naturalHeight || img.height || 1;
+      const aspectRatio = imgWidth / imgHeight;
+      
+      // 最大サイズを設定（高さ基準）
+      const maxHeight = 0.75;
+      
+      if (aspectRatio > 1) {
+        // 横長の画像
+        return { width: maxHeight * aspectRatio, height: maxHeight };
+      } else {
+        // 縦長の画像
+        return { width: maxHeight * aspectRatio, height: maxHeight };
+      }
+    }
+    return { width: 0.5, height: 0.75 }; // デフォルト値
+  }, [texture.image]);
+  
   const [ref, api] = useBox(() => ({
     mass: 1,
     position: initialPosition,
-    args: [0.5, 0.01, 0.75],
+    args: [width, 0.01, height],
     rotation: [Math.random() * Math.PI, Math.random() * Math.PI, 0],
     linearDamping: 0.9,
     angularDamping: 0.9,
   }));
+
+  // 画像サイズが変わったら物理演算のサイズも更新
+  useEffect(() => {
+    if (api) {
+      // 物理演算の形状を更新する必要がある場合はここで処理
+      // react-three/cannonではランタイムでの形状変更は難しいため、
+      // 初期化時に正しいサイズを設定することが重要
+    }
+  }, [width, height, api]);
 
   useFrame(() => {
     if (isGrabbed && ref.current) {
@@ -161,7 +227,7 @@ function TexturedPlane({
     <Handle targetRef={ref} translate rotate>
       <group ref={ref} onPointerDown={() => handleGrab(true)} onPointerUp={() => handleGrab(false)}>
         <mesh {...{ castShadow: true, receiveShadow: true } as any}>
-          <boxGeometry args={[0.5, 0.01, 0.75]} />
+          <boxGeometry args={[width, 0.01, height]} />
           <meshBasicMaterial map={texture} ref={matRefs} />
         </mesh>
       </group>
@@ -176,15 +242,16 @@ function VideoPlane({
   initialPosition: [number, number, number];
   videoPath: string;
 }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null); // Ref for the video element
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
   const [isGrabbed, setIsGrabbed] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 0.5, height: 0.75 });
 
   // Physics hook for the video plane
   const [ref, api] = useBox(() => ({
     mass: 1,
     position: initialPosition,
-    args: [0.5, 0.01, 0.75],
+    args: [dimensions.width, 0.01, dimensions.height],
     rotation: [Math.random() * Math.PI, Math.random() * Math.PI, 0],
     linearDamping: 0.9,
     angularDamping: 0.9,
@@ -201,6 +268,22 @@ function VideoPlane({
     video.style.display = 'none';
 
     video.onloadedmetadata = () => {
+      // 動画の縦横比を計算
+      const videoWidth = video.videoWidth || 1;
+      const videoHeight = video.videoHeight || 1;
+      const aspectRatio = videoWidth / videoHeight;
+      
+      // 最大サイズを設定（高さ基準）
+      const maxHeight = 0.75;
+      
+      if (aspectRatio > 1) {
+        // 横長の動画
+        setDimensions({ width: maxHeight * aspectRatio, height: maxHeight });
+      } else {
+        // 縦長の動画
+        setDimensions({ width: maxHeight * aspectRatio, height: maxHeight });
+      }
+      
       video.play().catch(error => console.error("Video autoplay failed:", error));
     };
 
@@ -243,7 +326,7 @@ function VideoPlane({
     <Handle targetRef={ref} translate rotate>
       <group ref={ref} onPointerDown={() => handleGrab(true)} onPointerUp={() => handleGrab(false)}>
         <mesh {...{ castShadow: true, receiveShadow: true } as any}>
-          <boxGeometry args={[0.5, 0.01, 0.75]} />
+          <boxGeometry args={[dimensions.width, 0.01, dimensions.height]} />
           {videoTexture && <meshBasicMaterial map={videoTexture} />}
         </mesh>
       </group>

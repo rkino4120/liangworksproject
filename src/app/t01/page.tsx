@@ -51,31 +51,43 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   const meshRef = useRef<Group>(null);
   const titleMeshRef = useRef<THREE.Mesh>(null);
   const [opacity, setOpacity] = useState(isVisible && !isAnimating ? 1 : 0);
+  const [currentY, setCurrentY] = useState(isVisible ? position[1] : -5); // Y座標の状態管理
 
-  // アニメーション管理を簡略化
+  // Y座標とopacityのアニメーション管理
   useEffect(() => {
     if (isAnimating && isVisible) {
-      // 開始時は透明に設定
+      // 開始時は透明に設定し、地面下から開始
       setOpacity(0);
+      setCurrentY(-5);
       
       // 遅延後にアニメーションを開始
       const timer = setTimeout(() => {
         
         let animationFrameId: number;
+        const targetY = position[1]; // 目標Y座標
+        const startY = -5; // 開始Y座標
+        const animationDuration = 2000; // 2秒のアニメーション
+        const startTime = Date.now();
         
         const animate = () => {
-          setOpacity(prev => {
-            const newOpacity = Math.min(1, prev + 0.02); // 滑らかなフェードイン
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / animationDuration, 1);
+          
+          // イージング関数(easeOutCubic)を適用
+          const easedProgress = 1 - Math.pow(1 - progress, 3);
+          
+          // Y座標を更新
+          setCurrentY(startY + (targetY - startY) * easedProgress);
+          
+          // 透明度を更新
+          setOpacity(easedProgress);
+          
+          // アニメーション継続チェック
+          if (progress < 1) {
+            animationFrameId = requestAnimationFrame(animate);
+          } else {
             
-            // アニメーションの終了チェック
-            if (newOpacity < 1) {
-              animationFrameId = requestAnimationFrame(animate);
-            } else {
-              
-            }
-            
-            return newOpacity;
-          });
+          }
         };
         
         animate();
@@ -90,13 +102,15 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
       
       return () => clearTimeout(timer);
     } else if (!isVisible) {
-      // 非表示時は即座に隠す
+      // 非表示時は即座に地面下に移動
       setOpacity(0);
+      setCurrentY(-5);
     } else if (isVisible && !isAnimating) {
       // アニメーションなしで表示の場合は即座に表示
       setOpacity(1);
+      setCurrentY(position[1]);
     }
-  }, [isVisible, isAnimating, animationDelay, title]);
+  }, [isVisible, isAnimating, animationDelay, position, title]);
 
   // マテリアルの透明度を更新
   useEffect(() => {
@@ -134,12 +148,12 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
     }
   }, [opacity]);
 
-  // 表示/非表示の管理
+  // Y座標の更新
   useEffect(() => {
     if (meshRef.current) {
-      meshRef.current.visible = isVisible;
+      meshRef.current.position.y = currentY;
     }
-  }, [isVisible]);
+  }, [currentY]);
 
   // 画像の縦横比を正確に取得（メモ化）
   const { width, height } = useMemo(() => {
@@ -163,7 +177,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   }, [texture.image]);
 
   return (
-    <group ref={meshRef} position={position} rotation={rotation}>
+    <group ref={meshRef} position={[position[0], currentY, position[2]]} rotation={rotation}>
       {/* Three.jsのPlaneオブジェクト*/}
       <Plane args={[width, height]} castShadow>
         {/* 画像の鮮やかな色調表示のためのマテリアル */}
@@ -472,7 +486,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
+    <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black', position: 'relative' }}>
       <Canvas camera={{ position: [0, 1.6, 5], fov: 75 }} flat dpr={[1, 2]}>
         {/* XRがサポートされている場合のみXRコンポーネントを使用 */}
         {xrSupported && store ? (
@@ -487,6 +501,42 @@ export default function App() {
           </>
         )}
       </Canvas>
+      {/* VRモード入室ボタンを中央に配置 */}
+      {xrSupported && store && (
+      <button
+        onClick={() => store.enterVR()}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          padding: '24px 80px',
+          fontSize: '24px',
+          fontWeight: '500',
+          letterSpacing: '0.4em',
+          color: '#ffffff',
+          backgroundColor: 'transparent',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          zIndex: 1000,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(0)';
+        }}
+      >
+        ENTER VR
+      </button>
+      )}
     </div>
   );
 }
