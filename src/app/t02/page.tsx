@@ -466,6 +466,8 @@ const CirclePlanesScene: React.FC = () => {
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [showFeedback, setShowFeedback] = useState(false);
+    // アニメーション中のページ送り要求をキューイング
+    const queuedNextCountRef = useRef(0);
     
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
@@ -583,6 +585,16 @@ const CirclePlanesScene: React.FC = () => {
                 console.log('=== Animation completed ===');
                 setAnimationProgress(1);
                 setIsAnimating(false);
+                // キューがあれば次のページ送りを自動実行
+                if (queuedNextCountRef.current > 0) {
+                    const remaining = queuedNextCountRef.current - 1;
+                    queuedNextCountRef.current = remaining;
+                    console.log('Dequeuing next page, remaining queued:', remaining);
+                    // 次のティックで currentPage を進める（連続アニメーション）
+                    setTimeout(() => {
+                        setCurrentPage(prev => (prev + 1) % totalPages);
+                    }, 0);
+                }
             }
         };
         
@@ -593,7 +605,7 @@ const CirclePlanesScene: React.FC = () => {
                 cancelAnimationFrame(animationFrameId);
             }
         };
-    }, [isAnimating, currentPage, displayPage]);
+    }, [isAnimating, currentPage, displayPage, totalPages]);
 
     // ページ変更時にアニメーション開始
     useEffect(() => {
@@ -628,13 +640,15 @@ const CirclePlanesScene: React.FC = () => {
         
         // アニメーション中はページ送りを無効化
         if (isAnimating) {
-            console.log('BLOCKED: Animation in progress');
-            setFeedbackMessage('WAIT - Animation in progress');
+            queuedNextCountRef.current += 1;
+            console.log('QUEUED: Animation in progress. queuedNextCount =', queuedNextCountRef.current);
+            setFeedbackMessage(`Queued: ${queuedNextCountRef.current}`);
             setShowFeedback(true);
             setTimeout(() => setShowFeedback(false), 2000);
             return;
         }
         
+        // 直ちに1ページ進める
         const nextPage = (currentPage + 1) % totalPages;
         setFeedbackMessage(`Next Page: ${nextPage + 1}`);
         setShowFeedback(true);
