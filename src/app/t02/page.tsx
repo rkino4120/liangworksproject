@@ -310,19 +310,10 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
     const leftController = useXRInputSourceState('controller', 'left');
     const rightController = useXRInputSourceState('controller', 'right');
     
-    const prevButtonStates = useRef({ leftTrigger: false, rightTrigger: false });
-    const debugLoggedRef = useRef(false);
+    const prevButtonStates = useRef({ leftTrigger: false, rightTrigger: false });
 
     useFrame(() => {
-        // デバッグ: 右コントローラーの状態を一度だけログ
-        if (!debugLoggedRef.current && rightController) {
-            console.log('Right controller detected:', rightController);
-            console.log('Right controller gamepad:', rightController.gamepad);
-            if (rightController.gamepad) {
-                console.log('Available buttons:', Object.keys(rightController.gamepad));
-            }
-            debugLoggedRef.current = true;
-        }
+        // デバッグログは削除
 
         // 左コントローラーのサムスティックで回転
         const thumbstick = leftController?.gamepad?.['xr-standard-thumbstick'];
@@ -363,51 +354,7 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
 
 XRControls.displayName = 'XRControls';
 
-// ===== VR内視覚フィードバック =====
-interface VRFeedbackProps {
-    message: string;
-    visible: boolean;
-}
-
-const VRFeedback: React.FC<VRFeedbackProps> = ({ message, visible }) => {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const textRef = useRef<THREE.Mesh>(null); // Textコンポーネントのref用
-    
-    useFrame(() => {
-        if (meshRef.current && meshRef.current.material) {
-            const material = meshRef.current.material as THREE.MeshBasicMaterial;
-            const targetOpacity = visible ? 0.8 : 0;
-            material.opacity += (targetOpacity - material.opacity) * 0.1; // スムーズにフェード
-
-            if (textRef.current && textRef.current.material) {
-                (textRef.current.material as THREE.MeshBasicMaterial).opacity = material.opacity;
-            }
-        }
-    });    return (
-        <group position={[0, 2, -1]}>
-            {/* 背景パネル */}
-            <mesh ref={meshRef}>
-                <planeGeometry args={[0.6, 0.15]} />
-                <meshBasicMaterial color="#000000" transparent opacity={0} />
-            </mesh>
-            {/* テキスト */}
-            <Text
-              ref={textRef}
-                position={[0, 0, 0.01]}
-                fontSize={0.05}
-                color="#00ff00"
-                anchorX="center"
-                anchorY="middle"
-              material-transparent={true}
-              material-opacity={0}
-            >
-                {message}
-            </Text>
-        </group>
-    );
-};
-
-VRFeedback.displayName = 'VRFeedback';
+// （デバッグ用のVRフィードバックは削除）
 
 // ===== UIオーバーレイ =====
 interface UIOverlayProps {
@@ -496,10 +443,7 @@ const CirclePlanesScene: React.FC = () => {
     const isAnimatingRef = useRef(false); // 最新のisAnimating状態を追跡するref
     const [loadedImagesCount, setLoadedImagesCount] = useState(0);
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
-    const [feedbackMessage, setFeedbackMessage] = useState('');
-    const [showFeedback, setShowFeedback] = useState(false);
-    // アニメーション中のページ送り要求をキューイング
-    const queuedNextCountRef = useRef(0);
+    // デバッグ用のメッセージ表示とキュー機能は削除
     
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
@@ -617,14 +561,10 @@ const CirclePlanesScene: React.FC = () => {
     }, [isAnimating]);
 
     // アニメーション進行管理 - requestAnimationFrameを使用
-    useEffect(() => {
-        if (!isAnimating) {
-            console.log('Animation not running, isAnimating:', isAnimating);
-            return;
-        }
-        
-        console.log('=== Animation started ===');
-      console.log('currentPage:', currentPage, 'displayPage(at start):', displayPage);
+    useEffect(() => {
+        if (!isAnimating) {
+            return;
+        }
         
         const startTime = Date.now();
         const duration = CONSTANTS.ANIMATION_DURATION * 1000;
@@ -636,31 +576,17 @@ const CirclePlanesScene: React.FC = () => {
             const progress = Math.min(1, elapsed / duration);
             setAnimationProgress(progress);
             
-            // progress が 0.5 に達したら、表示するページを切り替える（一度だけ）
+            // progress が 0.5 に達したら、表示するページを切り替える（一度だけ）
             if (progress >= 0.5 && !hasSwappedPage) {
                 hasSwappedPage = true;
-                console.log('=== Swapping display page from', displayPage, 'to', currentPage, '===');
                 setDisplayPage(currentPage);
             }
             
             if (progress < 1) {
                 animationFrameId = requestAnimationFrame(animate);
             } else {
-                console.log('=== Animation completed ===');
                 setAnimationProgress(1);
                 setIsAnimating(false);
-                // キューがあれば次のページ送りを自動実行
-                if (queuedNextCountRef.current > 0) {
-                    const remaining = queuedNextCountRef.current - 1;
-                    queuedNextCountRef.current = remaining;
-                    console.log('Dequeuing next page, remaining queued:', remaining);
-                    // 次のティックで currentPage を進め、即アニメーションを再開
-                    setTimeout(() => {
-                        setCurrentPage(prev => (prev + 1) % totalPages);
-                        setAnimationProgress(0);
-                        setIsAnimating(true);
-                    }, 0);
-                }
             }
         };
         
@@ -695,16 +621,7 @@ const CirclePlanesScene: React.FC = () => {
                 animElapsedRef.current = 0;
                 hasSwappedRef.current = false;
 
-                if (totalPagesRef.current > 1 && queuedNextCountRef.current > 0) {
-                    queuedNextCountRef.current -= 1;
-                    const next = (currentPageRef.current + 1) % totalPagesRef.current;
-                    setCurrentPage(next);
-                    setAnimationProgress(0);
-                    animElapsedRef.current = 0;
-                    hasSwappedRef.current = false;
-                    setIsAnimating(true);
-                    isAnimatingRef.current = true;
-                }
+                // アニメーション中の追加入力は無効化するため、キュー処理は行わない
             }
         });
         return null;
@@ -725,22 +642,13 @@ const CirclePlanesScene: React.FC = () => {
             return;
         }
         
-        // アニメーション中はページ送りをキューイング（refで最新の状態をチェック）
-        if (isAnimatingRef.current) {
-            queuedNextCountRef.current += 1;
-            console.log('QUEUED: Animation in progress. queuedNextCount =', queuedNextCountRef.current);
-            setFeedbackMessage(`Queued: ${queuedNextCountRef.current}`);
-            setShowFeedback(true);
-            setTimeout(() => setShowFeedback(false), 1500); // 表示時間を少し短縮
-            return;
-        }
+        // アニメーション中は入力無効（キューしない）
+        if (isAnimatingRef.current) return;
         
     // 直ちに1ページ進める前に、次ページのテクスチャを先読み
     const nextPage = (currentPage + 1) % totalPages;
     preloadPageTextures(nextPage);
-        setFeedbackMessage(`Next Page: ${nextPage + 1}`);
-        setShowFeedback(true);
-        setTimeout(() => setShowFeedback(false), 1500);
+    // デバッグ用の表示は削除
         
     console.log('Setting currentPage to:', nextPage);
     setCurrentPage(nextPage);
@@ -808,7 +716,7 @@ const CirclePlanesScene: React.FC = () => {
                         onPhotoLoaded={handlePhotoLoaded}
                     />
                 </Suspense>
-                <VRFeedback message={feedbackMessage} visible={showFeedback} />
+                {/* デバッグ用オーバーレイは削除 */}
                 
                 <OrbitControls enablePan={false} enableZoom={false} />
             </Canvas>
