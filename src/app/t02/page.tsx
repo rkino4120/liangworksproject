@@ -553,7 +553,10 @@ const CirclePlanesScene: React.FC = () => {
 
     // アニメーション進行管理 - requestAnimationFrameを使用
     useEffect(() => {
-        if (!isAnimating) return;
+        if (!isAnimating) {
+            console.log('Animation not running, isAnimating:', isAnimating);
+            return;
+        }
         
         console.log('Animation started');
         const startTime = Date.now();
@@ -575,6 +578,7 @@ const CirclePlanesScene: React.FC = () => {
                 animationFrameId = requestAnimationFrame(animate);
             } else {
                 console.log('Animation completed, setting isAnimating to false');
+                setAnimationProgress(1); // 確実に1にする
                 setIsAnimating(false);
             }
         };
@@ -593,26 +597,34 @@ const CirclePlanesScene: React.FC = () => {
         // 初回レンダリング時はアニメーションをスキップ
         if (isFirstRenderRef.current) {
             isFirstRenderRef.current = false;
-            console.log('First render - skipping animation');
+            console.log('First render - skipping animation. Setting displayPage to match currentPage.');
+            setDisplayPage(currentPage);
             return;
         }
+        
+        console.log('useEffect triggered - currentPage:', currentPage, 'displayPage:', displayPage, 'isAnimating:', isAnimating);
         
         if (currentPage !== displayPage) {
             console.log('Page change detected - starting animation. currentPage:', currentPage, 'displayPage:', displayPage);
             setAnimationProgress(0);
             setIsAnimating(true);
         }
-    }, [currentPage, displayPage]);
+    }, [currentPage, displayPage, isAnimating]);
 
     const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
     }, []);
 
     const handleNextPage = useCallback(() => {
-        console.log('handleNextPage called - isAnimating:', isAnimating, 'currentPage:', currentPage, 'displayPage:', displayPage);
+        console.log('=== handleNextPage called ===');
+        console.log('isAnimating:', isAnimating);
+        console.log('currentPage:', currentPage);
+        console.log('displayPage:', displayPage);
+        console.log('animationProgress:', animationProgress);
         
         // アニメーション中はページ送りを無効化
         if (isAnimating) {
+            console.log('BLOCKED: Animation in progress');
             setFeedbackMessage('WAIT - Animation in progress');
             setShowFeedback(true);
             setTimeout(() => setShowFeedback(false), 2000);
@@ -626,7 +638,7 @@ const CirclePlanesScene: React.FC = () => {
         
         console.log('Setting currentPage to:', nextPage);
         setCurrentPage(nextPage);
-    }, [totalPages, isAnimating, currentPage, displayPage]);
+    }, [totalPages, isAnimating, currentPage, displayPage, animationProgress]);
 
     return (
         <div className="relative w-full h-screen bg-gray-900">
