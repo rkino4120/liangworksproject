@@ -501,8 +501,13 @@ const CirclePlanesScene: React.FC = () => {
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
     
-    const [xrSupported, setXrSupported] = useState(false);
-    const [store, setStore] = useState<ReturnType<typeof createXRStore> | null>(null);
+    const [xrSupported, setXrSupported] = useState(false);
+    const [store, setStore] = useState<ReturnType<typeof createXRStore> | null>(null);
+    // XR用アニメ進行管理（WebXRのrAFに追従するためuseFrameを使用）
+    const animElapsedRef = useRef(0);
+    const hasSwappedRef = useRef(false);
+    const currentPageRef = useRef(currentPage);
+    const totalPagesRef = useRef(0);
 
     // XR初期化
     useEffect(() => {
@@ -568,7 +573,7 @@ const CirclePlanesScene: React.FC = () => {
         setLoadedImagesCount(prev => prev + 1);
     }, []);
 
-    // すべての画像が読み込まれたかチェック
+    // すべての画像が読み込まれたかチェック
     useEffect(() => {
         // totalPagesが計算できてから（galleryDataが読み込まれてから）
         if (totalPages > 0 && currentPhotos.length > 0 && loadedImagesCount >= currentPhotos.length) {
@@ -581,6 +586,9 @@ const CirclePlanesScene: React.FC = () => {
         setLoadedImagesCount(0);
         setAllImagesLoaded(false);
     }, [displayPage]);
+    // 最新ページ情報をrefに同期（useFrameで利用）
+    useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+    useEffect(() => { totalPagesRef.current = totalPages; }, [totalPages]);
     // isAnimating の変更を ref に同期（常に最新の値を参照できるように）
     useEffect(() => {
         isAnimatingRef.current = isAnimating;
@@ -641,7 +649,46 @@ const CirclePlanesScene: React.FC = () => {
                 cancelAnimationFrame(animationFrameId);
             }
         };
-    }, [isAnimating, currentPage, displayPage, totalPages]);    const handleGalleryRotate = useCallback((amount: number) => {
+    }, [isAnimating, currentPage, displayPage, totalPages]);
+
+    // Canvas内でのみ動作するuseFrameを使うため、Canvasの子コンポーネントで駆動
+    const XRAnimationDriver: React.FC = () => {
+        useFrame((_state, delta) => {
+            if (!store?.getState().session) return; // 非XRでは従来のeffectに任せる
+            if (!isAnimatingRef.current) return;
+
+            animElapsedRef.current += delta;
+            const progress = Math.min(1, animElapsedRef.current / CONSTANTS.ANIMATION_DURATION);
+            setAnimationProgress(progress);
+
+            if (progress >= 0.5 && !hasSwappedRef.current) {
+                hasSwappedRef.current = true;
+                setDisplayPage(currentPageRef.current);
+            }
+
+            if (progress >= 1) {
+                setAnimationProgress(1);
+                setIsAnimating(false);
+                isAnimatingRef.current = false;
+                animElapsedRef.current = 0;
+                hasSwappedRef.current = false;
+
+                if (totalPagesRef.current > 1 && queuedNextCountRef.current > 0) {
+                    queuedNextCountRef.current -= 1;
+                    const next = (currentPageRef.current + 1) % totalPagesRef.current;
+                    setCurrentPage(next);
+                    setAnimationProgress(0);
+                    animElapsedRef.current = 0;
+                    hasSwappedRef.current = false;
+                    setIsAnimating(true);
+                    isAnimatingRef.current = true;
+                }
+            }
+        });
+        return null;
+    };
+
+    const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
     }, []);
 
@@ -672,10 +719,14 @@ const CirclePlanesScene: React.FC = () => {
         setShowFeedback(true);
         setTimeout(() => setShowFeedback(false), 1500);
         
-        console.log('Setting currentPage to:', nextPage);
-        setCurrentPage(nextPage);
-        setAnimationProgress(0);
-        setIsAnimating(true);
+    console.log('Setting currentPage to:', nextPage);
+    setCurrentPage(nextPage);
+    setAnimationProgress(0);
+    // XR用の進行管理を初期化
+    animElapsedRef.current = 0;
+    hasSwappedRef.current = false;
+    setIsAnimating(true);
+    isAnimatingRef.current = true;
     
     // isAnimatingRefを使うことで、依存配列にisAnimatingを含める必要がなくなる
     }, [currentPage, totalPages]);    return (
@@ -695,7 +746,10 @@ const CirclePlanesScene: React.FC = () => {
                     loadedImagesCount={loadedImagesCount}
                     totalImages={currentPhotos.length}
                 />
-            )}            <Canvas shadows camera={{ position: [0, 1.6, 0], near: 0.1, far: 100 }}>
+            )}
+            <Canvas shadows camera={{ position: [0, 1.6, 0], near: 0.1, far: 100 }}>
+                {/* XR時のアニメ進行ドライバ（Canvas内で実行） */}
+                <XRAnimationDriver />
                 {xrSupported && store && (
                     <XR store={store}>
                         <XROrigin position={[0, 0, 0]} />
