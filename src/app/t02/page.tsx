@@ -296,8 +296,19 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
     const rightController = useXRInputSourceState('controller', 'right');
     
     const prevButtonStates = useRef({ leftTrigger: false, rightTrigger: false });
+    const debugLoggedRef = useRef(false);
 
     useFrame(() => {
+        // デバッグ: 右コントローラーの状態を一度だけログ
+        if (!debugLoggedRef.current && rightController) {
+            console.log('Right controller detected:', rightController);
+            console.log('Right controller gamepad:', rightController.gamepad);
+            if (rightController.gamepad) {
+                console.log('Available buttons:', Object.keys(rightController.gamepad));
+            }
+            debugLoggedRef.current = true;
+        }
+
         // 左コントローラーのサムスティックで回転
         const thumbstick = leftController?.gamepad?.['xr-standard-thumbstick'];
         if (thumbstick && typeof thumbstick === 'object' && 'xAxis' in thumbstick) {
@@ -313,27 +324,70 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
             (leftTrigger as XRGamepadButton).state === 'pressed' : false;
         
         if (leftTriggerPressed && !prevButtonStates.current.leftTrigger) {
-            console.log('Left trigger pressed - toggling audio');
             onToggleAudio();
         }
         prevButtonStates.current.leftTrigger = leftTriggerPressed;
         
-        // 右トリガーでページ送り
+        // 右トリガーでページ送り - 複数のボタンを試す
         const rightTrigger = rightController?.gamepad?.['xr-standard-trigger'];
+        const rightSqueeze = rightController?.gamepad?.['xr-standard-squeeze'];
+        
         const rightTriggerPressed = rightTrigger && typeof rightTrigger === 'object' && 'state' in rightTrigger ? 
             (rightTrigger as XRGamepadButton).state === 'pressed' : false;
+        const rightSqueezePressed = rightSqueeze && typeof rightSqueeze === 'object' && 'state' in rightSqueeze ? 
+            (rightSqueeze as XRGamepadButton).state === 'pressed' : false;
         
-        if (rightTriggerPressed && !prevButtonStates.current.rightTrigger) {
-            console.log('Right trigger pressed - next page');
+        if ((rightTriggerPressed || rightSqueezePressed) && !prevButtonStates.current.rightTrigger) {
             onNextPage();
         }
-        prevButtonStates.current.rightTrigger = rightTriggerPressed;
+        prevButtonStates.current.rightTrigger = rightTriggerPressed || rightSqueezePressed;
     });
 
     return null;
 };
 
 XRControls.displayName = 'XRControls';
+
+// ===== VR内視覚フィードバック =====
+interface VRFeedbackProps {
+    message: string;
+    visible: boolean;
+}
+
+const VRFeedback: React.FC<VRFeedbackProps> = ({ message, visible }) => {
+    const meshRef = useRef<THREE.Mesh>(null);
+    
+    useFrame(() => {
+        if (meshRef.current && meshRef.current.material) {
+            const material = meshRef.current.material as THREE.MeshBasicMaterial;
+            material.opacity = visible ? 0.8 : 0;
+        }
+    });
+    
+    if (!visible && !meshRef.current) return null;
+    
+    return (
+        <group position={[0, 2, -1]}>
+            {/* 背景パネル */}
+            <mesh ref={meshRef}>
+                <planeGeometry args={[0.6, 0.15]} />
+                <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+            </mesh>
+            {/* テキスト */}
+            <Text
+                position={[0, 0, 0.01]}
+                fontSize={0.05}
+                color="#00ff00"
+                anchorX="center"
+                anchorY="middle"
+            >
+                {message}
+            </Text>
+        </group>
+    );
+};
+
+VRFeedback.displayName = 'VRFeedback';
 
 // ===== UIオーバーレイ =====
 interface UIOverlayProps {
@@ -410,6 +464,8 @@ const CirclePlanesScene: React.FC = () => {
     const [isAnimating, setIsAnimating] = useState(false);
     const [loadedImagesCount, setLoadedImagesCount] = useState(0);
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [showFeedback, setShowFeedback] = useState(false);
     const isFirstRenderRef = useRef(true);
     
     const galleryData = useGalleryData();
@@ -550,10 +606,16 @@ const CirclePlanesScene: React.FC = () => {
     const handleNextPage = useCallback(() => {
         // アニメーション中はページ送りを無効化
         if (isAnimating) {
-            console.log('Page change blocked: animation in progress');
+            setFeedbackMessage('WAIT - Animation in progress');
+            setShowFeedback(true);
+            setTimeout(() => setShowFeedback(false), 2000);
             return;
         }
-        console.log('Page change triggered:', currentPage, '->', (currentPage + 1) % totalPages);
+        
+        setFeedbackMessage(`Next Page: ${(currentPage + 1) % totalPages + 1}`);
+        setShowFeedback(true);
+        setTimeout(() => setShowFeedback(false), 2000);
+        
         setCurrentPage(prev => (prev + 1) % totalPages);
     }, [totalPages, isAnimating, currentPage]);
 
@@ -610,6 +672,7 @@ const CirclePlanesScene: React.FC = () => {
                         animationProgress={animationProgress}
                         onPhotoLoaded={handlePhotoLoaded}
                     />
+                    <VRFeedback message={feedbackMessage} visible={showFeedback} />
                 </Suspense>
                 
                 <OrbitControls enablePan={false} enableZoom={false} />
