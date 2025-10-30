@@ -555,6 +555,7 @@ const CirclePlanesScene: React.FC = () => {
     useEffect(() => {
         if (!isAnimating) return;
         
+        console.log('Animation started');
         const startTime = Date.now();
         const duration = CONSTANTS.ANIMATION_DURATION * 1000;
         let animationFrameId: number;
@@ -566,12 +567,14 @@ const CirclePlanesScene: React.FC = () => {
             
             // progress が 0.5 に達したら、表示するページを切り替える
             if (progress >= 0.5 && displayPage !== currentPage) {
+                console.log('Switching display page from', displayPage, 'to', currentPage);
                 setDisplayPage(currentPage);
             }
             
             if (progress < 1) {
                 animationFrameId = requestAnimationFrame(animate);
             } else {
+                console.log('Animation completed, setting isAnimating to false');
                 setIsAnimating(false);
             }
         };
@@ -590,10 +593,12 @@ const CirclePlanesScene: React.FC = () => {
         // 初回レンダリング時はアニメーションをスキップ
         if (isFirstRenderRef.current) {
             isFirstRenderRef.current = false;
+            console.log('First render - skipping animation');
             return;
         }
         
         if (currentPage !== displayPage) {
+            console.log('Page change detected - starting animation. currentPage:', currentPage, 'displayPage:', displayPage);
             setAnimationProgress(0);
             setIsAnimating(true);
         }
@@ -604,6 +609,8 @@ const CirclePlanesScene: React.FC = () => {
     }, []);
 
     const handleNextPage = useCallback(() => {
+        console.log('handleNextPage called - isAnimating:', isAnimating, 'currentPage:', currentPage, 'displayPage:', displayPage);
+        
         // アニメーション中はページ送りを無効化
         if (isAnimating) {
             setFeedbackMessage('WAIT - Animation in progress');
@@ -612,12 +619,14 @@ const CirclePlanesScene: React.FC = () => {
             return;
         }
         
-        setFeedbackMessage(`Next Page: ${(currentPage + 1) % totalPages + 1}`);
+        const nextPage = (currentPage + 1) % totalPages;
+        setFeedbackMessage(`Next Page: ${nextPage + 1}`);
         setShowFeedback(true);
         setTimeout(() => setShowFeedback(false), 2000);
         
-        setCurrentPage(prev => (prev + 1) % totalPages);
-    }, [totalPages, isAnimating, currentPage]);
+        console.log('Setting currentPage to:', nextPage);
+        setCurrentPage(nextPage);
+    }, [totalPages, isAnimating, currentPage, displayPage]);
 
     return (
         <div className="relative w-full h-screen bg-gray-900">
