@@ -604,10 +604,16 @@ const CirclePlanesScene: React.FC = () => {
         }
         
         console.log('useEffect triggered - currentPage:', currentPage, 'displayPage:', displayPage, 'isAnimating:', isAnimating);
+        
+        if (currentPage === displayPage) {
+            console.log('currentPage === displayPage, no animation needed');
+            return;
+        }
+        
         console.log('Page change detected - starting animation. currentPage:', currentPage, 'displayPage:', displayPage);
         setAnimationProgress(0);
         setIsAnimating(true);
-    }, [currentPage]);
+    }, [currentPage, displayPage]);
 
     const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
