@@ -205,6 +205,8 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgr
     );
 });
 
+PhotoPlane.displayName = 'PhotoPlane';
+
 // ===== ギャラリーコンポーネント =====
 interface GalleryProps {
     photos: PhotoInfo[];
@@ -228,6 +230,8 @@ const Gallery: React.FC<GalleryProps> = React.memo(({ photos, rotationY, animati
     );
 });
 
+Gallery.displayName = 'Gallery';
+
 // ===== 床コンポーネント =====
 const Floor: React.FC = React.memo(() => {
     const [texture, bumpMap] = useLoader(TextureLoader, [
@@ -248,6 +252,8 @@ const Floor: React.FC = React.memo(() => {
         </Circle>
     );
 });
+
+Floor.displayName = 'Floor';
 
 // ===== XRコントローラー管理 =====
 interface XRControlsProps {
@@ -296,6 +302,8 @@ const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAu
     return null;
 });
 
+XRControls.displayName = 'XRControls';
+
 // ===== UIオーバーレイ =====
 interface UIOverlayProps {
     isAudioPlaying: boolean;
@@ -321,6 +329,8 @@ const UIOverlay: React.FC<UIOverlayProps> = React.memo(({ isAudioPlaying, onTogg
         </div>
     );
 });
+
+UIOverlay.displayName = 'UIOverlay';
 
 // ===== VR Enter Button =====
 interface VRButtonProps {
@@ -357,6 +367,8 @@ const VREnterButton: React.FC<VRButtonProps> = React.memo(({ store, allImagesLoa
         </div>
     );
 });
+
+VREnterButton.displayName = 'VREnterButton';
 
 // ===== メインシーンコンポーネント =====
 const CirclePlanesScene: React.FC = () => {
