@@ -367,22 +367,20 @@ interface VRFeedbackProps {
 }
 
 const VRFeedback: React.FC<VRFeedbackProps> = ({ message, visible }) => {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const textRef = useRef<any>(null); // Textコンポーネントのref用
-    
-    useFrame(() => {
-        if (meshRef.current && meshRef.current.material) {
-            const material = meshRef.current.material as THREE.MeshBasicMaterial;
+    const meshRef = useRef<THREE.Mesh>(null);
+    const textRef = useRef<THREE.Mesh>(null); // Textコンポーネントのref用
+    
+    useFrame(() => {
+        if (meshRef.current && meshRef.current.material) {
+            const material = meshRef.current.material as THREE.MeshBasicMaterial;
             const targetOpacity = visible ? 0.8 : 0;
             material.opacity += (targetOpacity - material.opacity) * 0.1; // スムーズにフェード
 
-            if (textRef.current) {
-                textRef.current.material.opacity = material.opacity;
+            if (textRef.current && textRef.current.material) {
+                (textRef.current.material as THREE.MeshBasicMaterial).opacity = material.opacity;
             }
-        }
-    });
-    
-    return (
+        }
+    });    return (
         <group position={[0, 2, -1]}>
             {/* 背景パネル */}
             <mesh ref={meshRef}>
@@ -633,14 +631,12 @@ const CirclePlanesScene: React.FC = () => {
         
         animationFrameId = requestAnimationFrame(animate);
         
-        return () => {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-        };
-    }, [isAnimating, currentPage, totalPages]); // displayPage は依存配列から削除
-
-    const handleGalleryRotate = useCallback((amount: number) => {
+        return () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
+    }, [isAnimating, currentPage, displayPage, totalPages]);    const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
     }, []);
 
