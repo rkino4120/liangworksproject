@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
@@ -275,10 +275,10 @@ Gallery.displayName = 'Gallery';
 // ===== 床コンポーネント =====
 const Floor: React.FC = React.memo(() => {
     // テクスチャパスを修正
-    const [texture, bumpMap] = useLoader(TextureLoader, [
-        'https://placehold.co/1024x1024/666/31343C?text=Floor+Texture',
-        'https://placehold.co/1024x1024/AAA/31343C?text=Floor+Bump'
-    ]);
+    const [texture, bumpMap] = useLoader(TextureLoader, [
+        '/texture/concrete_diff.jpg',
+        '/texture/concrete_rough.png'
+    ]);
 
     useMemo(() => {
         [texture, bumpMap].forEach(tex => {
@@ -488,9 +488,10 @@ const CirclePlanesScene: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [displayPage, setDisplayPage] = useState(0); // 実際に表示するページ
     const [galleryRotationY, setGalleryRotationY] = useState(0);
-    const [animationProgress, setAnimationProgress] = useState(1); // 初回は1（表示状態）
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+    const [animationProgress, setAnimationProgress] = useState(1); // 初回は1（表示状態）
+    const [isAnimating, setIsAnimating] = useState(false);
+    const isAnimatingRef = useRef(false); // 最新のisAnimating状態を追跡するref
+    const [loadedImagesCount, setLoadedImagesCount] = useState(0);
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [showFeedback, setShowFeedback] = useState(false);
@@ -580,6 +581,10 @@ const CirclePlanesScene: React.FC = () => {
         setLoadedImagesCount(0);
         setAllImagesLoaded(false);
     }, [displayPage]);
+    // isAnimating の変更を ref に同期（常に最新の値を参照できるように）
+    useEffect(() => {
+        isAnimatingRef.current = isAnimating;
+    }, [isAnimating]);
 
     // アニメーション進行管理 - requestAnimationFrameを使用
     useEffect(() => {
@@ -640,44 +645,40 @@ const CirclePlanesScene: React.FC = () => {
         setGalleryRotationY(prev => prev + amount);
     }, []);
 
-    const handleNextPage = useCallback(() => {
-        console.log('=== handleNextPage called ===');
-        console.log('isAnimating (from closure):', isAnimating);
-        console.log('currentPage (from closure):', currentPage);
-        
+    const handleNextPage = useCallback(() => {
+        console.log('=== handleNextPage called ===');
+        console.log('isAnimating (from ref):', isAnimatingRef.current);
+        console.log('currentPage (from closure):', currentPage);
+        
         // totalPages が 0 または 1 の場合は何もしない
-        if (totalPages <= 1) {
-            console.log('Not enough pages to turn.');
-            return;
-        }
-        
-        // アニメーション中はページ送りをキューイング
-        if (isAnimating) {
-            queuedNextCountRef.current += 1;
-            console.log('QUEUED: Animation in progress. queuedNextCount =', queuedNextCountRef.current);
-            setFeedbackMessage(`Queued: ${queuedNextCountRef.current}`);
-            setShowFeedback(true);
-            setTimeout(() => setShowFeedback(false), 1500); // 表示時間を少し短縮
-            return;
-        }
-        
-        // 直ちに1ページ進め、同時にアニメーション開始
-        const nextPage = (currentPage + 1) % totalPages;
-        setFeedbackMessage(`Next Page: ${nextPage + 1}`);
-        setShowFeedback(true);
-        setTimeout(() => setShowFeedback(false), 1500);
-        
-        console.log('Setting currentPage to:', nextPage);
-        setCurrentPage(nextPage);
-        setAnimationProgress(0);
-        setIsAnimating(true);
-    
-    // ***** 修正点 *****
-    // useCallback の依存配列から animationProgress と displayPage を削除
-    // これにより、アニメーション中に handleNextPage が不必要に再生成されるのを防ぎます
-    }, [isAnimating, currentPage, totalPages]);
-
-    return (
+        if (totalPages <= 1) {
+            console.log('Not enough pages to turn.');
+            return;
+        }
+        
+        // アニメーション中はページ送りをキューイング（refで最新の状態をチェック）
+        if (isAnimatingRef.current) {
+            queuedNextCountRef.current += 1;
+            console.log('QUEUED: Animation in progress. queuedNextCount =', queuedNextCountRef.current);
+            setFeedbackMessage(`Queued: ${queuedNextCountRef.current}`);
+            setShowFeedback(true);
+            setTimeout(() => setShowFeedback(false), 1500); // 表示時間を少し短縮
+            return;
+        }
+        
+        // 直ちに1ページ進め、同時にアニメーション開始
+        const nextPage = (currentPage + 1) % totalPages;
+        setFeedbackMessage(`Next Page: ${nextPage + 1}`);
+        setShowFeedback(true);
+        setTimeout(() => setShowFeedback(false), 1500);
+        
+        console.log('Setting currentPage to:', nextPage);
+        setCurrentPage(nextPage);
+        setAnimationProgress(0);
+        setIsAnimating(true);
+    
+    // isAnimatingRefを使うことで、依存配列にisAnimatingを含める必要がなくなる
+    }, [currentPage, totalPages]);    return (
         <div className="relative w-full h-screen bg-gray-900">
             <UIOverlay 
                 isAudioPlaying={isAudioPlaying}
