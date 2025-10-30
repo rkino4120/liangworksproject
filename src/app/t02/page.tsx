@@ -466,7 +466,6 @@ const CirclePlanesScene: React.FC = () => {
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [showFeedback, setShowFeedback] = useState(false);
-    const isFirstRenderRef = useRef(true);
     
     const galleryData = useGalleryData();
     const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
@@ -558,27 +557,31 @@ const CirclePlanesScene: React.FC = () => {
             return;
         }
         
-        console.log('Animation started');
+        console.log('=== Animation started ===');
+        console.log('currentPage:', currentPage, 'displayPage:', displayPage);
+        
         const startTime = Date.now();
         const duration = CONSTANTS.ANIMATION_DURATION * 1000;
         let animationFrameId: number;
+        let hasSwappedPage = false;
         
         const animate = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(1, elapsed / duration);
             setAnimationProgress(progress);
             
-            // progress が 0.5 に達したら、表示するページを切り替える
-            if (progress >= 0.5 && displayPage !== currentPage) {
-                console.log('Switching display page from', displayPage, 'to', currentPage);
+            // progress が 0.5 に達したら、表示するページを切り替える（一度だけ）
+            if (progress >= 0.5 && !hasSwappedPage) {
+                hasSwappedPage = true;
+                console.log('=== Swapping display page from', displayPage, 'to', currentPage, '===');
                 setDisplayPage(currentPage);
             }
             
             if (progress < 1) {
                 animationFrameId = requestAnimationFrame(animate);
             } else {
-                console.log('Animation completed, setting isAnimating to false');
-                setAnimationProgress(1); // 確実に1にする
+                console.log('=== Animation completed ===');
+                setAnimationProgress(1);
                 setIsAnimating(false);
             }
         };
@@ -594,22 +597,17 @@ const CirclePlanesScene: React.FC = () => {
 
     // ページ変更時にアニメーション開始
     useEffect(() => {
-        // 初回レンダリング時はアニメーションをスキップ
-        if (isFirstRenderRef.current) {
-            isFirstRenderRef.current = false;
-            console.log('First render - skipping animation. Setting displayPage to match currentPage.');
-            setDisplayPage(currentPage);
+        // 初回は currentPage と displayPage が同じなのでスキップ
+        if (currentPage === displayPage) {
+            console.log('currentPage === displayPage, no animation needed');
             return;
         }
         
         console.log('useEffect triggered - currentPage:', currentPage, 'displayPage:', displayPage, 'isAnimating:', isAnimating);
-        
-        if (currentPage !== displayPage) {
-            console.log('Page change detected - starting animation. currentPage:', currentPage, 'displayPage:', displayPage);
-            setAnimationProgress(0);
-            setIsAnimating(true);
-        }
-    }, [currentPage, displayPage, isAnimating]);
+        console.log('Page change detected - starting animation. currentPage:', currentPage, 'displayPage:', displayPage);
+        setAnimationProgress(0);
+        setIsAnimating(true);
+    }, [currentPage]);
 
     const handleGalleryRotate = useCallback((amount: number) => {
         setGalleryRotationY(prev => prev + amount);
