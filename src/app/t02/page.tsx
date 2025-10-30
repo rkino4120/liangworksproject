@@ -291,7 +291,7 @@ interface XRControlsProps {
     onNextPage: () => void;
 }
 
-const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAudio, onNextPage }) => {
+const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNextPage }) => {
     const leftController = useXRInputSourceState('controller', 'left');
     const rightController = useXRInputSourceState('controller', 'right');
     
@@ -313,6 +313,7 @@ const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAu
             (leftTrigger as XRGamepadButton).state === 'pressed' : false;
         
         if (leftTriggerPressed && !prevButtonStates.current.leftTrigger) {
+            console.log('Left trigger pressed - toggling audio');
             onToggleAudio();
         }
         prevButtonStates.current.leftTrigger = leftTriggerPressed;
@@ -323,13 +324,14 @@ const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAu
             (rightTrigger as XRGamepadButton).state === 'pressed' : false;
         
         if (rightTriggerPressed && !prevButtonStates.current.rightTrigger) {
+            console.log('Right trigger pressed - next page');
             onNextPage();
         }
         prevButtonStates.current.rightTrigger = rightTriggerPressed;
     });
 
     return null;
-});
+};
 
 XRControls.displayName = 'XRControls';
 
@@ -546,8 +548,14 @@ const CirclePlanesScene: React.FC = () => {
     }, []);
 
     const handleNextPage = useCallback(() => {
+        // アニメーション中はページ送りを無効化
+        if (isAnimating) {
+            console.log('Page change blocked: animation in progress');
+            return;
+        }
+        console.log('Page change triggered:', currentPage, '->', (currentPage + 1) % totalPages);
         setCurrentPage(prev => (prev + 1) % totalPages);
-    }, [totalPages]);
+    }, [totalPages, isAnimating, currentPage]);
 
     return (
         <div className="relative w-full h-screen bg-gray-900">
