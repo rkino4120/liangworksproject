@@ -109,7 +109,14 @@ const useAudioManager = () => {
         }
     }, []);
 
-    return { isAudioPlaying, toggleAudio };
+    const stopAudio = useCallback(() => {
+        if (playerRef.current && playerRef.current.state === 'started') {
+            playerRef.current.stop();
+            setIsAudioPlaying(false);
+        }
+    }, []);
+
+    return { isAudioPlaying, toggleAudio, stopAudio };
 };
 
 // ===== 個別写真プレーンコンポーネント =====
@@ -119,58 +126,56 @@ interface PhotoPlaneProps {
     onLoaded?: () => void;
 }
 
-const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress, onLoaded }) => {
+const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgress, onLoaded }) => {
     const groupRef = useRef<THREE.Group>(null);
     const photoMeshRef = useRef<THREE.Mesh>(null);
     const plateMeshRef = useRef<THREE.Mesh>(null);
     const texture = useLoader(TextureLoader, info.imageUrl);
-    const [dimensions, setDimensions] = React.useState({ width: info.width, height: info.height });
-    const loadedRef = useRef(false);
+    const [dimensions, setDimensions] = useState({ width: info.width, height: info.height });
+    const hasLoadedRef = useRef(false);
 
-    useEffect(() => {
+    // テクスチャ設定とサイズ計算を一度だけ実行
+    useMemo(() => {
         texture.magFilter = LinearFilter;
         texture.minFilter = LinearFilter;
         texture.generateMipmaps = true;
         texture.anisotropy = 16;
-        
-        // 画像の実際の縦横比を取得して適用
-        if (texture.image) {
+    }, [texture]);
+
+    useEffect(() => {
+        if (texture.image && !hasLoadedRef.current) {
             const aspectRatio = texture.image.width / texture.image.height;
             const width = CONSTANTS.PANEL_WIDTH;
             const height = width / aspectRatio;
             setDimensions({ width, height });
-            
-            // 画像が読み込まれたことを通知（一度だけ）
-            if (!loadedRef.current && onLoaded) {
-                loadedRef.current = true;
-                onLoaded();
-            }
+            hasLoadedRef.current = true;
+            onLoaded?.();
         }
     }, [texture, onLoaded]);
 
-    // アニメーションの適用
-    useEffect(() => {
-        if (groupRef.current) {
-            const progress = Math.min(1, Math.max(0, animationProgress));
-            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-            
-            groupRef.current.position.y = info.position[1] + CONSTANTS.ANIMATION_Y_OFFSET * (1 - eased);
-            
-            if (photoMeshRef.current && photoMeshRef.current.material) {
-                const mat = photoMeshRef.current.material as THREE.MeshBasicMaterial;
-                mat.opacity = eased;
-                mat.transparent = true;
-            }
-            if (plateMeshRef.current && plateMeshRef.current.material) {
-                const mat = plateMeshRef.current.material as THREE.MeshStandardMaterial;
-                mat.opacity = eased * 0.7;
-                mat.transparent = true;
-            }
+    // useFrameでアニメーションを適用（より効率的）
+    useFrame(() => {
+        if (!groupRef.current) return;
+        
+        const progress = Math.min(1, Math.max(0, animationProgress));
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        groupRef.current.position.y = info.position[1] + CONSTANTS.ANIMATION_Y_OFFSET * (1 - eased);
+        
+        if (photoMeshRef.current?.material) {
+            const mat = photoMeshRef.current.material as THREE.MeshBasicMaterial;
+            mat.opacity = eased;
+            mat.transparent = eased < 1;
         }
-    }, [animationProgress, info.position]);
+        if (plateMeshRef.current?.material) {
+            const mat = plateMeshRef.current.material as THREE.MeshStandardMaterial;
+            mat.opacity = eased * 0.7;
+            mat.transparent = eased < 1;
+        }
+    });
 
     const plateHeight = 0.1;
-    const plateY = -dimensions.height / 2 - 0.05 - plateHeight / 2;
+    const plateY = useMemo(() => -dimensions.height / 2 - 0.05 - plateHeight / 2, [dimensions.height]);
 
     return (
         <group ref={groupRef} position={info.position} rotation={info.rotation}>
@@ -198,7 +203,7 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = ({ info, animationProgress, onLoad
             </Text>
         </group>
     );
-};
+});
 
 // ===== ギャラリーコンポーネント =====
 interface GalleryProps {
@@ -208,12 +213,12 @@ interface GalleryProps {
     onPhotoLoaded?: () => void;
 }
 
-const Gallery: React.FC<GalleryProps> = ({ photos, rotationY, animationProgress, onPhotoLoaded }) => {
+const Gallery: React.FC<GalleryProps> = React.memo(({ photos, rotationY, animationProgress, onPhotoLoaded }) => {
     return (
         <group rotation={[0, rotationY, 0]}>
             {photos.map((photo, index) => (
                 <PhotoPlane 
-                    key={`${photo.imageUrl}-${index}`} 
+                    key={photo.imageUrl} 
                     info={photo} 
                     animationProgress={animationProgress - index * 0.1}
                     onLoaded={onPhotoLoaded}
@@ -221,14 +226,16 @@ const Gallery: React.FC<GalleryProps> = ({ photos, rotationY, animationProgress,
             ))}
         </group>
     );
-};
+});
 
 // ===== 床コンポーネント =====
-const Floor: React.FC = () => {
-    const texture = useLoader(TextureLoader, '/texture/concrete_diff.jpg');
-    const bumpMap = useLoader(TextureLoader, '/texture/concrete_rough.png');
+const Floor: React.FC = React.memo(() => {
+    const [texture, bumpMap] = useLoader(TextureLoader, [
+        '/texture/concrete_diff.jpg',
+        '/texture/concrete_rough.png'
+    ]);
 
-    useEffect(() => {
+    useMemo(() => {
         [texture, bumpMap].forEach(tex => {
             tex.repeat.set(12, 12);
             tex.wrapS = tex.wrapT = RepeatWrapping;
@@ -240,7 +247,7 @@ const Floor: React.FC = () => {
             <meshStandardMaterial map={texture} bumpMap={bumpMap} bumpScale={0.05} />
         </Circle>
     );
-};
+});
 
 // ===== XRコントローラー管理 =====
 interface XRControlsProps {
@@ -249,7 +256,7 @@ interface XRControlsProps {
     onNextPage: () => void;
 }
 
-const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNextPage }) => {
+const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAudio, onNextPage }) => {
     const leftController = useXRInputSourceState('controller', 'left');
     const rightController = useXRInputSourceState('controller', 'right');
     
@@ -257,42 +264,37 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
 
     useFrame(() => {
         // 左コントローラーのサムスティックで回転
-        if (leftController?.gamepad?.['xr-standard-thumbstick']) {
-            const thumbstick = leftController.gamepad['xr-standard-thumbstick'];
-            if (thumbstick && typeof thumbstick === 'object' && 'xAxis' in thumbstick) {
-                const xAxis = (thumbstick as XRGamepadAxis).xAxis || 0;
-                if (Math.abs(xAxis) > 0.1) {
-                    onRotate(-xAxis * 0.05);
-                }
+        const thumbstick = leftController?.gamepad?.['xr-standard-thumbstick'];
+        if (thumbstick && typeof thumbstick === 'object' && 'xAxis' in thumbstick) {
+            const xAxis = (thumbstick as XRGamepadAxis).xAxis || 0;
+            if (Math.abs(xAxis) > 0.1) {
+                onRotate(-xAxis * 0.05);
             }
         }
         
-        // ボタン入力チェック
-        if (leftController?.gamepad?.['xr-standard-trigger']) {
-            const trigger = leftController.gamepad['xr-standard-trigger'];
-            const pressed = trigger && typeof trigger === 'object' && 'state' in trigger ? 
-                (trigger as XRGamepadButton).state === 'pressed' : false;
-            
-            if (pressed && !prevButtonStates.current.leftTrigger) {
-                onToggleAudio();
-            }
-            prevButtonStates.current.leftTrigger = pressed;
-        }
+        // 左トリガーでオーディオトグル
+        const trigger = leftController?.gamepad?.['xr-standard-trigger'];
+        const triggerPressed = trigger && typeof trigger === 'object' && 'state' in trigger ? 
+            (trigger as XRGamepadButton).state === 'pressed' : false;
         
-        if (rightController?.gamepad?.['a-button']) {
-            const aButton = rightController.gamepad['a-button'];
-            const pressed = aButton && typeof aButton === 'object' && 'state' in aButton ? 
-                (aButton as XRGamepadButton).state === 'pressed' : false;
-            
-            if (pressed && !prevButtonStates.current.rightA) {
-                onNextPage();
-            }
-            prevButtonStates.current.rightA = pressed;
+        if (triggerPressed && !prevButtonStates.current.leftTrigger) {
+            onToggleAudio();
         }
+        prevButtonStates.current.leftTrigger = triggerPressed;
+        
+        // 右Aボタンでページ送り
+        const aButton = rightController?.gamepad?.['a-button'];
+        const aPressed = aButton && typeof aButton === 'object' && 'state' in aButton ? 
+            (aButton as XRGamepadButton).state === 'pressed' : false;
+        
+        if (aPressed && !prevButtonStates.current.rightA) {
+            onNextPage();
+        }
+        prevButtonStates.current.rightA = aPressed;
     });
 
     return null;
-};
+});
 
 // ===== UIオーバーレイ =====
 interface UIOverlayProps {
@@ -302,7 +304,7 @@ interface UIOverlayProps {
     totalPages: number;
 }
 
-const UIOverlay: React.FC<UIOverlayProps> = ({ isAudioPlaying, onToggleAudio, currentPage, totalPages }) => {
+const UIOverlay: React.FC<UIOverlayProps> = React.memo(({ isAudioPlaying, onToggleAudio, currentPage, totalPages }) => {
     return (
         <div className="absolute top-4 left-4 z-10 space-y-2">
             <button
@@ -318,7 +320,43 @@ const UIOverlay: React.FC<UIOverlayProps> = ({ isAudioPlaying, onToggleAudio, cu
             </div>
         </div>
     );
-};
+});
+
+// ===== VR Enter Button =====
+interface VRButtonProps {
+    store: ReturnType<typeof createXRStore>;
+    allImagesLoaded: boolean;
+    loadedImagesCount: number;
+    totalImages: number;
+}
+
+const VREnterButton: React.FC<VRButtonProps> = React.memo(({ store, allImagesLoaded, loadedImagesCount, totalImages }) => {
+    const handleEnterVR = useCallback(() => {
+        if (allImagesLoaded) {
+            store.enterVR();
+        }
+    }, [allImagesLoaded, store]);
+
+    return (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <button 
+                onClick={handleEnterVR} 
+                disabled={!allImagesLoaded}
+                className={`pointer-events-auto px-12 py-6 rounded-2xl font-bold text-2xl shadow-2xl transform transition-all duration-300 ${
+                    allImagesLoaded 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white hover:scale-110 hover:shadow-green-500/50 cursor-pointer'
+                        : 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                }`}
+            >
+                {allImagesLoaded ? (
+                    <>🥽 Enter VR Mode</>
+                ) : (
+                    <>⏳ Loading Images... ({loadedImagesCount}/{totalImages})</>
+                )}
+            </button>
+        </div>
+    );
+});
 
 // ===== メインシーンコンポーネント =====
 const CirclePlanesScene: React.FC = () => {
@@ -330,23 +368,36 @@ const CirclePlanesScene: React.FC = () => {
     const [allImagesLoaded, setAllImagesLoaded] = useState(false);
     
     const galleryData = useGalleryData();
-    const { isAudioPlaying, toggleAudio } = useAudioManager();
+    const { isAudioPlaying, toggleAudio, stopAudio } = useAudioManager();
     
     const [xrSupported, setXrSupported] = useState(false);
     const [store, setStore] = useState<ReturnType<typeof createXRStore> | null>(null);
 
     // XR初期化
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'navigator' in window && 'xr' in navigator) {
-            navigator.xr?.isSessionSupported('immersive-vr').then((supported) => {
-                if (supported) {
-                    const xrStore = createXRStore();
-                    setStore(xrStore);
-                    setXrSupported(true);
-                }
-            });
-        }
-    }, []);
+        if (typeof window === 'undefined' || !('navigator' in window) || !('xr' in navigator)) return;
+        
+        let unsubscribe: (() => void) | undefined;
+        
+        navigator.xr?.isSessionSupported('immersive-vr').then((supported) => {
+            if (supported) {
+                const xrStore = createXRStore();
+                setStore(xrStore);
+                setXrSupported(true);
+                
+                // XRセッション状態の監視
+                unsubscribe = xrStore.subscribe((state) => {
+                    if (!state.session) {
+                        stopAudio();
+                    }
+                });
+            }
+        });
+        
+        return () => {
+            unsubscribe?.();
+        };
+    }, [stopAudio]);
 
     const totalPages = useMemo(() => 
         Math.ceil(galleryData.length / CONSTANTS.PHOTOS_PER_PAGE), 
@@ -399,26 +450,33 @@ const CirclePlanesScene: React.FC = () => {
         setAllImagesLoaded(false);
     }, [currentPage]);
 
-    // アニメーション進行管理
+    // アニメーション進行管理 - requestAnimationFrameを使用
     useEffect(() => {
-        if (isAnimating) {
-            const startTime = Date.now();
-            const duration = CONSTANTS.ANIMATION_DURATION * 1000;
+        if (!isAnimating) return;
+        
+        const startTime = Date.now();
+        const duration = CONSTANTS.ANIMATION_DURATION * 1000;
+        let animationFrameId: number;
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            setAnimationProgress(progress);
             
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(1, elapsed / duration);
-                setAnimationProgress(progress);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    setIsAnimating(false);
-                }
-            };
-            
-            requestAnimationFrame(animate);
-        }
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                setIsAnimating(false);
+            }
+        };
+        
+        animationFrameId = requestAnimationFrame(animate);
+        
+        return () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
     }, [isAnimating]);
 
     // ページ変更時にアニメーション開始
@@ -444,25 +502,14 @@ const CirclePlanesScene: React.FC = () => {
                 totalPages={totalPages}
             />
             
-            {/* VR Enter Button - 中央に大きく表示 */}
+            {/* VR Enter Button */}
             {xrSupported && store && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                    <button 
-                        onClick={() => allImagesLoaded && store.enterVR()} 
-                        disabled={!allImagesLoaded}
-                        className={`pointer-events-auto px-12 py-6 rounded-2xl font-bold text-2xl shadow-2xl transform transition-all duration-300 ${
-                            allImagesLoaded 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white hover:scale-110 hover:shadow-green-500/50 cursor-pointer'
-                                : 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                        }`}
-                    >
-                        {allImagesLoaded ? (
-                            <>🥽 Enter VR Mode</>
-                        ) : (
-                            <>⏳ Loading Images... ({loadedImagesCount}/{currentPhotos.length})</>
-                        )}
-                    </button>
-                </div>
+                <VREnterButton 
+                    store={store}
+                    allImagesLoaded={allImagesLoaded}
+                    loadedImagesCount={loadedImagesCount}
+                    totalImages={currentPhotos.length}
+                />
             )}
             
             <Canvas shadows camera={{ position: [0, 1.6, 0], near: 0.1, far: 100 }}>
