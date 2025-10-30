@@ -581,11 +581,6 @@ const CirclePlanesScene: React.FC = () => {
         }
     }, [loadedImagesCount, currentPhotos.length, totalPages]);
 
-    // ページ変更時に読み込みカウントをリセット
-    useEffect(() => {
-        setLoadedImagesCount(0);
-        setAllImagesLoaded(false);
-    }, [displayPage]);
     // 最新ページ情報をrefに同期（useFrameで利用）
     useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
     useEffect(() => { totalPagesRef.current = totalPages; }, [totalPages]);
