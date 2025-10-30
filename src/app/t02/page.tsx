@@ -315,8 +315,8 @@ const XRControls: React.FC<XRControlsProps> = ({ onRotate, onToggleAudio, onNext
     useFrame(() => {
         // デバッグログは削除
 
-        // 左コントローラーのサムスティックで回転
-        const thumbstick = leftController?.gamepad?.['xr-standard-thumbstick'];
+        // 右コントローラーのサムスティックで回転
+        const thumbstick = rightController?.gamepad?.['xr-standard-thumbstick'];
         if (thumbstick && typeof thumbstick === 'object' && 'xAxis' in thumbstick) {
             const xAxis = (thumbstick as XRGamepadAxis).xAxis || 0;
             if (Math.abs(xAxis) > 0.1) {
