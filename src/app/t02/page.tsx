@@ -52,6 +52,9 @@ const COLORS = {
     CLEAR: '#0c0c19',
 } as const;
 
+// three.js のローダーキャッシュを有効化して、ページ切り替え時の再ロードを抑制
+THREE.Cache.enabled = true;
+
 // ===== サンプルデータ =====
 const DEFAULT_GALLERY_DATA: GalleryDataItem[] = Array.from({ length: 16 }, (_, i) => ({
     imageUrl: `/images/photo${String(i + 1).padStart(2, '0')}.jpg`,
@@ -509,6 +512,22 @@ const CirclePlanesScene: React.FC = () => {
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(0);
 
+    // 次ページのテクスチャを先読みしてサスペンドを回避/短縮
+    const preloadPageTextures = useCallback((pageIndex: number) => {
+        if (!galleryData || galleryData.length === 0) return;
+        const start = pageIndex * CONSTANTS.PHOTOS_PER_PAGE;
+        const items = galleryData.slice(start, start + CONSTANTS.PHOTOS_PER_PAGE);
+        const loader = new THREE.TextureLoader();
+        items.forEach((item) => {
+            // キャッシュが有効なら2回目以降は即時完了
+            try {
+                loader.load(item.imageUrl, () => {}, undefined, () => {});
+            } catch {
+                // 失敗してもUIを止めない
+            }
+        });
+    }, [galleryData]);
+
     // XR初期化
     useEffect(() => {
         if (typeof window === 'undefined' || !('navigator' in window) || !('xr' in navigator)) return;
@@ -580,6 +599,14 @@ const CirclePlanesScene: React.FC = () => {
             setAllImagesLoaded(true);
         }
     }, [loadedImagesCount, currentPhotos.length, totalPages]);
+
+    // 初期表示とページ確定時に、現在ページと次ページを先読み
+    useEffect(() => {
+        if (totalPages > 0) {
+            preloadPageTextures(displayPage);
+            preloadPageTextures((displayPage + 1) % totalPages);
+        }
+    }, [displayPage, totalPages, preloadPageTextures]);
 
     // 最新ページ情報をrefに同期（useFrameで利用）
     useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
@@ -708,8 +735,9 @@ const CirclePlanesScene: React.FC = () => {
             return;
         }
         
-        // 直ちに1ページ進め、同時にアニメーション開始
-        const nextPage = (currentPage + 1) % totalPages;
+    // 直ちに1ページ進める前に、次ページのテクスチャを先読み
+    const nextPage = (currentPage + 1) % totalPages;
+    preloadPageTextures(nextPage);
         setFeedbackMessage(`Next Page: ${nextPage + 1}`);
         setShowFeedback(true);
         setTimeout(() => setShowFeedback(false), 1500);
@@ -724,7 +752,7 @@ const CirclePlanesScene: React.FC = () => {
     isAnimatingRef.current = true;
     
     // isAnimatingRefを使うことで、依存配列にisAnimatingを含める必要がなくなる
-    }, [currentPage, totalPages]);    return (
+    }, [currentPage, totalPages, preloadPageTextures]);    return (
         <div className="relative w-full h-screen bg-gray-900">
             <UIOverlay 
                 isAudioPlaying={isAudioPlaying}
@@ -769,17 +797,18 @@ const CirclePlanesScene: React.FC = () => {
                     shadow-mapSize-width={512}
                     shadow-mapSize-height={512}
                 />
-                
-                <Suspense fallback={null}>
-                    <Floor />
-                    <Gallery 
-                        photos={photoInfos} 
-                        rotationY={galleryRotationY}
-                        animationProgress={animationProgress}
-                        onPhotoLoaded={handlePhotoLoaded}
-                    />
-                    <VRFeedback message={feedbackMessage} visible={showFeedback} />
-                </Suspense>
+                
+                {/* FloorとVRFeedbackはサスペンドの影響外にして、画面全体の消失を防ぐ */}
+                <Floor />
+                <Suspense fallback={null}>
+                    <Gallery 
+                        photos={photoInfos} 
+                        rotationY={galleryRotationY}
+                        animationProgress={animationProgress}
+                        onPhotoLoaded={handlePhotoLoaded}
+                    />
+                </Suspense>
+                <VRFeedback message={feedbackMessage} visible={showFeedback} />
                 
                 <OrbitControls enablePan={false} enableZoom={false} />
             </Canvas>
