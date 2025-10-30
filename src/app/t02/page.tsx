@@ -40,9 +40,9 @@ const CONSTANTS = {
     GROUND_SIZE: 10,
     PHOTOS_PER_PAGE: 6,
     PHOTO_Y_POSITION: 1.3,
-    ANIMATION_DURATION: 1.2, // 秒（フェードアウト+フェードイン）
-    FADE_OUT_DURATION: 0.5, // フェードアウト時間
-    FADE_IN_DURATION: 0.7, // フェードイン時間
+    ANIMATION_DURATION: 2.0, // 秒（地面下に沈む + 上昇する）
+    FADE_OUT_DURATION: 1.0, // フェードアウト時間（地面下に沈む）
+    FADE_IN_DURATION: 1.0, // フェードイン時間（地面下から上昇）
     ANIMATION_Y_OFFSET: 0.5,
 } as const;
 
@@ -132,7 +132,7 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgr
     const plateMeshRef = useRef<THREE.Mesh>(null);
     const texture = useLoader(TextureLoader, info.imageUrl);
     const [dimensions, setDimensions] = useState({ width: info.width, height: info.height });
-    const hasLoadedRef = useRef(false);
+    const prevImageUrlRef = useRef(info.imageUrl);
 
     // テクスチャ設定とサイズ計算を一度だけ実行
     useMemo(() => {
@@ -143,34 +143,59 @@ const PhotoPlane: React.FC<PhotoPlaneProps> = React.memo(({ info, animationProgr
     }, [texture]);
 
     useEffect(() => {
-        if (texture.image && !hasLoadedRef.current) {
+        if (texture.image) {
             const aspectRatio = texture.image.width / texture.image.height;
             const width = CONSTANTS.PANEL_WIDTH;
             const height = width / aspectRatio;
             setDimensions({ width, height });
-            hasLoadedRef.current = true;
-            onLoaded?.();
+            
+            // 画像URLが変わったら新しい読み込みとして通知
+            if (prevImageUrlRef.current !== info.imageUrl) {
+                prevImageUrlRef.current = info.imageUrl;
+                onLoaded?.();
+            } else if (!prevImageUrlRef.current) {
+                // 初回読み込み
+                onLoaded?.();
+            }
         }
-    }, [texture, onLoaded]);
+    }, [texture, onLoaded, info.imageUrl]);
 
-    // useFrameでアニメーションを適用（より効率的）
+    // useFrameでアニメーションを適用 - 地面下から上昇する仕様
     useFrame(() => {
         if (!groupRef.current) return;
         
         const progress = Math.min(1, Math.max(0, animationProgress));
-        const eased = 1 - Math.pow(1 - progress, 3);
         
-        groupRef.current.position.y = info.position[1] + CONSTANTS.ANIMATION_Y_OFFSET * (1 - eased);
+        // 0.0-0.5: 地面下に沈む（フェードアウト）
+        // 0.5-1.0: 地面下から上昇（フェードイン）
+        let yOffset: number;
+        let opacity: number;
+        
+        if (progress < 0.5) {
+            // 沈むフェーズ
+            const fadeOutProgress = progress * 2; // 0 to 1
+            const eased = Math.pow(fadeOutProgress, 2); // ease-in
+            yOffset = -3 * eased; // 地面下3単位まで沈む
+            opacity = 1 - eased;
+        } else {
+            // 上昇フェーズ
+            const fadeInProgress = (progress - 0.5) * 2; // 0 to 1
+            const eased = 1 - Math.pow(1 - fadeInProgress, 3); // ease-out cubic
+            yOffset = -3 * (1 - eased); // 地面下から0まで上昇
+            opacity = eased;
+        }
+        
+        groupRef.current.position.y = info.position[1] + yOffset;
         
         if (photoMeshRef.current?.material) {
             const mat = photoMeshRef.current.material as THREE.MeshBasicMaterial;
-            mat.opacity = eased;
-            mat.transparent = eased < 1;
+            mat.opacity = opacity;
+            mat.transparent = opacity < 1;
         }
         if (plateMeshRef.current?.material) {
             const mat = plateMeshRef.current.material as THREE.MeshStandardMaterial;
-            mat.opacity = eased * 0.7;
-            mat.transparent = eased < 1;
+            mat.opacity = opacity * 0.7;
+            mat.transparent = opacity < 1;
         }
     });
 
@@ -218,11 +243,11 @@ interface GalleryProps {
 const Gallery: React.FC<GalleryProps> = React.memo(({ photos, rotationY, animationProgress, onPhotoLoaded }) => {
     return (
         <group rotation={[0, rotationY, 0]}>
-            {photos.map((photo, index) => (
+            {photos.map((photo) => (
                 <PhotoPlane 
                     key={photo.imageUrl} 
                     info={photo} 
-                    animationProgress={animationProgress - index * 0.1}
+                    animationProgress={animationProgress}
                     onLoaded={onPhotoLoaded}
                 />
             ))}
