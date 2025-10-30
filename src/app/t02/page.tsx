@@ -295,7 +295,7 @@ const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAu
     const leftController = useXRInputSourceState('controller', 'left');
     const rightController = useXRInputSourceState('controller', 'right');
     
-    const prevButtonStates = useRef({ leftTrigger: false, rightA: false });
+    const prevButtonStates = useRef({ leftTrigger: false, rightTrigger: false });
 
     useFrame(() => {
         // 左コントローラーのサムスティックで回転
@@ -308,24 +308,24 @@ const XRControls: React.FC<XRControlsProps> = React.memo(({ onRotate, onToggleAu
         }
         
         // 左トリガーでオーディオトグル
-        const trigger = leftController?.gamepad?.['xr-standard-trigger'];
-        const triggerPressed = trigger && typeof trigger === 'object' && 'state' in trigger ? 
-            (trigger as XRGamepadButton).state === 'pressed' : false;
+        const leftTrigger = leftController?.gamepad?.['xr-standard-trigger'];
+        const leftTriggerPressed = leftTrigger && typeof leftTrigger === 'object' && 'state' in leftTrigger ? 
+            (leftTrigger as XRGamepadButton).state === 'pressed' : false;
         
-        if (triggerPressed && !prevButtonStates.current.leftTrigger) {
+        if (leftTriggerPressed && !prevButtonStates.current.leftTrigger) {
             onToggleAudio();
         }
-        prevButtonStates.current.leftTrigger = triggerPressed;
+        prevButtonStates.current.leftTrigger = leftTriggerPressed;
         
-        // 右Aボタンでページ送り
-        const aButton = rightController?.gamepad?.['a-button'];
-        const aPressed = aButton && typeof aButton === 'object' && 'state' in aButton ? 
-            (aButton as XRGamepadButton).state === 'pressed' : false;
+        // 右トリガーでページ送り
+        const rightTrigger = rightController?.gamepad?.['xr-standard-trigger'];
+        const rightTriggerPressed = rightTrigger && typeof rightTrigger === 'object' && 'state' in rightTrigger ? 
+            (rightTrigger as XRGamepadButton).state === 'pressed' : false;
         
-        if (aPressed && !prevButtonStates.current.rightA) {
+        if (rightTriggerPressed && !prevButtonStates.current.rightTrigger) {
             onNextPage();
         }
-        prevButtonStates.current.rightA = aPressed;
+        prevButtonStates.current.rightTrigger = rightTriggerPressed;
     });
 
     return null;
