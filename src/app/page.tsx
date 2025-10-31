@@ -6,6 +6,7 @@ import { LoadingSpinner, ErrorMessage } from '@/components/LoadingStates';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import FAQ from '@/components/FAQ';
 
@@ -63,9 +64,11 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col items-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                <img 
+                <Image 
                   src="/images/icon1.png" 
                   alt="低コストアイコン"
+                  width={64}
+                  height={64}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -77,9 +80,11 @@ export default function Home() {
 
             <div className="flex flex-col items-center">
               <div className="w-14 h-14 mb-4 flex items-center justify-center">
-                <img 
+                <Image 
                   src="/images/icon2.png" 
                   alt="省スペースアイコン"
+                  width={56}
+                  height={56}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -91,9 +96,11 @@ export default function Home() {
 
             <div className="flex flex-col items-center">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                <img 
+                <Image 
                   src="/images/icon3.png" 
                   alt="簡単設営アイコン"
+                  width={64}
+                  height={64}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -132,18 +139,11 @@ export default function Home() {
             
             <div className="order-1 md:order-2">
               <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-slate-200 shadow-md">
-                <img 
+                <Image 
                   src="/images/vrphoto.jpg" 
                   alt="Meta Quest VRゴーグル"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-400"><svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>';
-                    }
-                  }}
+                  fill
+                  className="object-cover"
                 />
               </div>
             </div>
@@ -177,18 +177,11 @@ export default function Home() {
           <div className="grid md:grid-cols-[200px_1fr] gap-8 items-start">
             <div className="mx-auto md:mx-0">
               <div className="relative w-48 h-48 rounded-full overflow-hidden bg-slate-200 shadow-md">
-                <img 
+                <Image 
                   src="/images/profile.jpg" 
                   alt="主催者プロフィール写真"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-400"><svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>';
-                    }
-                  }}
+                  fill
+                  className="object-cover"
                 />
               </div>
             </div>

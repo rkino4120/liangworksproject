@@ -2,7 +2,6 @@
 
 import { useState, memo } from 'react';
 import { Work } from '@/types/work';
-import { Badge } from '@/components/ui/badge';
 import WorkCard from './WorkCard';
 
 interface WorksGridProps {
