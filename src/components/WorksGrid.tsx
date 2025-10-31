@@ -14,10 +14,11 @@ const WorksGrid = memo(function WorksGrid({ initialWorks }: WorksGridProps) {
 
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <Badge variant="secondary" className="text-sm">
-          {works.length}件の作品
-        </Badge>
+      <div className="text-center mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
+          展示方法の一例
+        </h2>
+        <div className="w-16 h-0.5 bg-slate-300 mx-auto"></div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
