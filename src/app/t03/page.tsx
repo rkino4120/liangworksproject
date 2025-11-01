@@ -17,6 +17,19 @@ import { Physics, useBox, useCylinder } from '@react-three/cannon';
 const store = createXRStore({ emulate: { syntheticEnvironment: false } });
 
 export default function App() {
+  const [isVRSupported, setIsVRSupported] = useState(false);
+
+  useEffect(() => {
+    // XRSessionがサポートされているかチェック
+    if ('xr' in navigator) {
+      navigator.xr?.isSessionSupported('immersive-vr').then((supported) => {
+        setIsVRSupported(supported);
+      }).catch(() => {
+        setIsVRSupported(false);
+      });
+    }
+  }, []);
+
   return (
     <div className="w-screen h-screen bg-black relative">
       <Canvas
@@ -46,40 +59,42 @@ export default function App() {
         </Physics>
         <OrbitControls />
       </Canvas>
-      {/* VRモード入室ボタンを中央に配置 */}
-      <button
-        onClick={() => store.enterVR()}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          padding: '24px 80px',
-          fontSize: '24px',
-          fontWeight: '500',
-          letterSpacing: '0.4em',
-          color: '#ffffff',
-          backgroundColor: 'transparent',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '2px',
-          cursor: 'pointer',
-          backdropFilter: 'blur(10px)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          zIndex: 1000,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
-          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-          e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(0)';
-        }}
-      >
-        ENTER VR
-      </button>
+      {/* VRモード入室ボタン - VR対応時のみ表示 */}
+      {isVRSupported && (
+        <button
+          onClick={() => store.enterVR()}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            padding: '24px 80px',
+            fontSize: '24px',
+            fontWeight: '500',
+            letterSpacing: '0.4em',
+            color: '#ffffff',
+            backgroundColor: 'transparent',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '2px',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            zIndex: 1000,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+            e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'translate(-50%, -50%) translateY(0)';
+          }}
+        >
+          ENTER VR
+        </button>
+      )}
     </div>
   );
 }
@@ -167,7 +182,7 @@ function TexturedPlane({
   // 画像の縦横比を計算
   const { width, height } = useMemo(() => {
     if (texture.image) {
-      const img = texture.image;
+      const img = texture.image as HTMLImageElement;
       const imgWidth = img.naturalWidth || img.width || 1;
       const imgHeight = img.naturalHeight || img.height || 1;
       const aspectRatio = imgWidth / imgHeight;

@@ -450,6 +450,7 @@ const CirclePlanesScene: React.FC = () => {
     
     const [xrSupported, setXrSupported] = useState(false);
     const [store, setStore] = useState<ReturnType<typeof createXRStore> | null>(null);
+    const [isInVR, setIsInVR] = useState(false);
     // XR用アニメ進行管理（WebXRのrAFに追従するためuseFrameを使用）
     const animElapsedRef = useRef(0);
     const hasSwappedRef = useRef(false);
@@ -479,21 +480,21 @@ const CirclePlanesScene: React.FC = () => {
         let unsubscribe: (() => void) | undefined;
         
         navigator.xr?.isSessionSupported('immersive-vr').then((supported) => {
-            if (supported) {
-                const xrStore = createXRStore();
-                setStore(xrStore);
-                setXrSupported(true);
-                
-                // XRセッション状態の監視
-                unsubscribe = xrStore.subscribe((state) => {
-                    if (!state.session) {
-                        stopAudio();
-                    }
-                });
-            }
-        });
-        
-        return () => {
+            if (supported) {
+                const xrStore = createXRStore();
+                setStore(xrStore);
+                setXrSupported(true);
+                
+                // XRセッション状態の監視
+                unsubscribe = xrStore.subscribe((state) => {
+                    const inVR = !!state.session;
+                    setIsInVR(inVR);
+                    if (!inVR) {
+                        stopAudio();
+                    }
+                });
+            }
+        });        return () => {
             unsubscribe?.();
         };
     }, [stopAudio]);
@@ -662,14 +663,14 @@ const CirclePlanesScene: React.FC = () => {
     // isAnimatingRefを使うことで、依存配列にisAnimatingを含める必要がなくなる
     }, [currentPage, totalPages, preloadPageTextures]);    return (
         <div className="relative w-full h-screen bg-gray-900">
-            <UIOverlay 
-                isAudioPlaying={isAudioPlaying}
-                onToggleAudio={toggleAudio}
-                currentPage={currentPage}
-                totalPages={totalPages}
-            />
-            
-            {/* VR Enter Button */}
+            {isInVR && (
+                <UIOverlay 
+                    isAudioPlaying={isAudioPlaying}
+                    onToggleAudio={toggleAudio}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                />
+            )}            {/* VR Enter Button */}
             {store && (
                 <VREnterButton 
                     store={store}

@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@/components", "@/lib"],
   },
+  // Turbopack設定（Next.js 16対応）
+  turbopack: {},
   // React DevToolsエラーを抑制
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {

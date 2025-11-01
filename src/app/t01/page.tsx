@@ -159,7 +159,7 @@ function PhotoPlane({ position, rotation, texture, title, isVisible, isAnimating
   const { width, height } = useMemo(() => {
     let width = 1, height = 1;
     if (texture.image) {
-      const img = texture.image;
+      const img = texture.image as HTMLImageElement;
       const imgWidth = img.naturalWidth ?? img.width ?? 1;
       const imgHeight = img.naturalHeight ?? img.height ?? 1;
       const aspectRatio = imgWidth / imgHeight;
