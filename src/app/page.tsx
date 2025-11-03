@@ -1,7 +1,9 @@
 'use client';
 
 import { useWorks } from '@/hooks/useWorks';
+import { useNews } from '@/hooks/useNews';
 import WorksGrid from '@/components/WorksGrid';
+import NewsList from '@/components/NewsList';
 import { LoadingSpinner, ErrorMessage } from '@/components/LoadingStates';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,9 +11,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import FAQ from '@/components/FAQ';
+import { Mail } from 'lucide-react';
 
 export default function Home() {
   const { works, loading, error } = useWorks();
+  const { news, loading: newsLoading, error: newsError } = useNews();
 
   usePageMeta({
     title: 'VR Galleries - WebGL/WebGPU作品集',
@@ -24,6 +28,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-white relative overflow-hidden">
+        {/* 背景動画 */}
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-60"
+          >
+            <source src="/movie/vrgalleries.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-white/40"></div>
+        </div>
+
         <div className="relative z-10 container mx-auto px-4 py-8">
           <nav className="flex justify-center mb-8">
             <div className="flex items-center space-x-6">
@@ -37,17 +55,40 @@ export default function Home() {
           </nav>
           
           <div className="text-center space-y-6">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight font-serif text-slate-800 drop-shadow-sm">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight font-serif text-slate-900 drop-shadow-[0_2px_8px_rgba(255,255,255,0.9)] [text-shadow:_0_0_20px_rgb(255_255_255_/_80%),_0_2px_4px_rgb(0_0_0_/_40%)]">
               VR Galleries
             </h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              VRゴーグルで写真を鑑賞できるギャラリーです。
+            <p className="text-lg text-slate-800 font-semibold max-w-2xl mx-auto leading-relaxed drop-shadow-[0_1px_4px_rgba(255,255,255,0.8)] bg-white/60 rounded-lg px-6 py-4">
+              VRで空間すべてが、作品の表現の場に
               <br />
-              作品の新たな展示方法のご提案です。
+              鑑賞者は「見る」から「体験する」へ
             </p>
           </div>
         </div>
       </header>
+
+      <section className="container mx-auto px-4 py-12 max-w-5xl">
+        <div className="bg-slate-50 rounded-lg border border-slate-200 p-8 shadow-sm">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
+              お知らせ・イベント
+            </h2>
+            <div className="w-16 h-0.5 bg-slate-300 mx-auto mt-3"></div>
+          </div>
+          
+          {newsLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : newsError ? (
+            <div className="text-center py-8 text-red-600">
+              {newsError}
+            </div>
+          ) : (
+            <NewsList news={news} />
+          )}
+        </div>
+      </section>
 
       <section className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-sm">
@@ -208,6 +249,45 @@ export default function Home() {
       </section>
 
       <FAQ />
+
+      <section className="container mx-auto px-4 py-12 max-w-5xl">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg border border-slate-200 p-8 shadow-sm">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
+              メンバー募集
+            </h2>
+            <div className="w-16 h-0.5 bg-slate-300 mx-auto mt-3"></div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-shrink-0">
+              <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
+                <Image 
+                  src="/images/icon_vrcamera.png" 
+                  alt="VRカメラアイコン"
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-4 text-slate-700 leading-relaxed">
+              <p>
+                福岡市内在住で、カメラまたはVRに興味があり、1年以上継続して取り組んだ経験のある方を募集しています。プロ・アマは問いません。VRギャラリーでの作品展示や制作活動を一緒に楽しめる仲間を探しています。個人サークルとしての活動のため報酬はありませんが、創作の喜びを共有できる方を歓迎します。
+              </p>
+              <div className="pt-2 flex justify-end">
+                <Button asChild className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 text-base">
+                  <Link href="/contact" className="flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    連絡先はこちら
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <footer className="border-t border-slate-200 bg-slate-50">
         <div className="container mx-auto px-4 py-8">
