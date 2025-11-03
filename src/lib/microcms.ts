@@ -1,10 +1,5 @@
-import { createClient } from 'microcms-js-sdk';
-import { config } from './config';
-
-export const client = createClient({
-  serviceDomain: config.microCMS.serviceDomain,
-  apiKey: config.microCMS.apiKey,
-});
+// 型定義のみを提供するファイル
+// 実際のAPIコールはAPI Route (/api/works, /api/news) で行う
 
 export type Work = {
   id: string;
@@ -50,36 +45,4 @@ export type NewsResponse = {
   totalCount: number;
   offset: number;
   limit: number;
-};
-
-export const getWorks = async (): Promise<WorkResponse> => {
-  return await client.get({
-    endpoint: 'itemlist',
-    queries: {
-      fields: 'id,title,description,url,category,thumbnail,publishedAt,updatedAt',
-      limit: 50,
-    },
-  });
-};
-
-export const getWorksByCategory = async (category: string): Promise<WorkResponse> => {
-  return await client.get({
-    endpoint: 'itemlist',
-    queries: {
-      fields: 'id,title,description,url,category,thumbnail,publishedAt,updatedAt',
-      filters: `category[equals]${category}`,
-      limit: 50,
-    },
-  });
-};
-
-export const getNews = async (): Promise<NewsResponse> => {
-  return await client.get({
-    endpoint: 'news',
-    queries: {
-      fields: 'id,title,body,publishedAt,updatedAt',
-      limit: 5,
-      orders: '-publishedAt',
-    },
-  });
 };
