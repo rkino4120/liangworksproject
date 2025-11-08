@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "VR Galleries - WebGL/WebGPU作品展示",
+    default: "VR Galleries - VR空間内作品展示",
     template: "%s | VR Galleries"
   },
-  description: "Three.jsやBabylon.jsを使用したWebGL/WebGPU作品を展示するVRギャラリー。インタラクティブな3D体験をお楽しみください。",
-  keywords: ["WebGL", "WebGPU", "Three.js", "Babylon.js", "VR", "3D", "インスタレーション", "アート", "ギャラリー"],
+  description: "Three.jsを使用したVRギャラリー。インタラクティブな作品鑑賞体験を提供します。",
+  keywords: ["WebGL", "WebGPU", "Three.js", "VR", "3D", "アート", "ギャラリー"],
   authors: [{ name: "VR Galleries Team" }],
   creator: "VR Galleries",
   publisher: "VR Galleries",
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     url: "https://vrgalleries.com",
     siteName: "VR Galleries",
-    title: "VR Galleries - WebGL/WebGPU作品展示",
-    description: "Three.jsやBabylon.jsを使用したWebGL/WebGPU作品を展示するVRギャラリー",
+    title: "VR Galleries - VR空間内作品展示",
+    description: "Three.jsを使用したVRギャラリー",
     images: [
       {
         url: "/images/og-image.jpg",
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VR Galleries - WebGL/WebGPU作品展示",
-    description: "Three.jsやBabylon.jsを使用したWebGL/WebGPU作品を展示するVRギャラリー",
+    title: "VR Galleries - VR空間内作品展示",
+    description: "Three.jsを使用したVRギャラリー。インタラクティブな作品鑑賞体験を提供します。",
     images: ["/images/og-image.jpg"]
   },
   robots: {
