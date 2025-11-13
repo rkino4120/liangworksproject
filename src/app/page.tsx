@@ -49,7 +49,7 @@ export default function Home() {
                 Home
               </span>
               <Button variant="ghost" asChild>
-                <Link href="/contact">Contact</Link>
+                <Link href="https://forms.gle/admYN7ZzWAkLwjKh8" target="_blank" rel="noopener noreferrer">Contact</Link>
               </Button>
             </div>
           </nav>
@@ -278,7 +278,7 @@ export default function Home() {
               </p>
               <div className="pt-2 flex justify-end">
                 <Button asChild className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 text-base">
-                  <Link href="/contact" className="flex items-center gap-2">
+                  <Link href="https://forms.gle/admYN7ZzWAkLwjKh8" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                     <Mail className="w-5 h-5" />
                     連絡先はこちら
                   </Link>
