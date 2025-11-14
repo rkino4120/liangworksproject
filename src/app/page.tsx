@@ -27,42 +27,49 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white relative overflow-hidden">
-        {/* 背景動画 */}
+      <header className="relative overflow-hidden h-[44vh] md:h-[72vh] lg:h-[80vh]">
+        {/* 背景画像（横幅いっぱい） */}
         <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover opacity-60"
-          >
-            <source src="/movie/vrgalleries.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-white/40"></div>
+          <Image
+            src="/images/vrgalleryimage.jpg"
+            alt="VR Galleries background"
+            fill
+            className="object-cover w-full h-full"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <nav className="flex justify-center mb-8">
-            <div className="flex items-center space-x-6">
-              <span className="text-slate-700 font-semibold text-sm border-b-2 border-slate-300 pb-1">
+        <div className="relative z-10 container mx-auto px-4 py-8 h-full">
+          <nav className="flex justify-center mb-6">
+            <div className="flex items-center space-x-4 bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
+              <span className="bg-[#3BF9C7] text-slate-900 font-semibold text-sm rounded-md px-3 py-1 drop-shadow">
                 Home
               </span>
-              <Button variant="ghost" asChild>
-                <Link href="https://forms.gle/admYN7ZzWAkLwjKh8" target="_blank" rel="noopener noreferrer">Contact</Link>
+              <Button variant="ghost" asChild className="p-0">
+                <Link
+                  href="https://forms.gle/admYN7ZzWAkLwjKh8"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:bg-white/10 rounded-md px-3 py-1"
+                >
+                  Contact
+                </Link>
               </Button>
             </div>
           </nav>
-          
-          <div className="text-center space-y-6">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight font-serif text-slate-900 drop-shadow-[0_2px_8px_rgba(255,255,255,0.9)] [text-shadow:_0_0_20px_rgb(255_255_255_/_80%),_0_2px_4px_rgb(0_0_0_/_40%)]">
-              VR Galleries
-            </h1>
-            <p className="text-lg text-slate-800 font-semibold max-w-2xl mx-auto leading-relaxed drop-shadow-[0_1px_4px_rgba(255,255,255,0.8)] bg-white/60 rounded-lg px-6 py-4">
-              VRで空間すべてが、作品の表現の場に
-              <br />
-              鑑賞者は「見る」から「体験する」へ
-            </p>
+
+          <div className="flex items-center h-full">
+            <div className="w-full md:w-1/2 lg:w-2/5 ml-auto">
+              <div className="text-left space-y-6 ml-4">
+                <h1 className="text-[#3BF9C7] text-lg lg:text-xl mb-2">VRギャラリー</h1>
+                <p className="text-2xl lg:text-5xl md:text-6xl font-bold tracking-wide font-serif text-white leading-tight drop-shadow-lg mb-4">写真の空気ごと<br />「追体験」</p>
+                <p className="text-lg lg:text-2xl text-white font-semibold leading-relaxed rounded-lg">
+                  福岡市内を活動拠点に、<br />
+                  写真の新たな鑑賞方法を展開中。
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </header>

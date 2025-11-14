@@ -9,6 +9,10 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
+    question: '福岡市内のどこで活動予定ですか？',
+    answer: '今のところ固定の場所はなく、レンタルスペースを活用する予定です。'
+  },
+  {
     question: '特定の人だけが閲覧できる環境で展示することもできますか？',
     answer: 'できます。パスワードをかけることで閲覧を制限します。'
   },
