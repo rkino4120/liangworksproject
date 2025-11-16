@@ -1,18 +1,12 @@
-// microCMS APIから返されるお知らせデータの型定義
+// news.jsonから読み込むお知らせデータの型定義
 export type News = {
-  id: string;
+  id: number | string;
   title: string;
   body: string;
   publishedAt: string;
-  updatedAt: string;
-  createdAt: string;
-  revisedAt: string;
 };
 
-// microCMS APIのレスポンス型
+// APIレスポンス型
 export type NewsResponse = {
   contents: News[];
-  totalCount: number;
-  offset: number;
-  limit: number;
 };

@@ -1,5 +1,6 @@
 // 型定義のみを提供するファイル
-// 実際のAPIコールはAPI Route (/api/works, /api/news) で行う
+// Works: API Route /api/works で MicroCMS から取得
+// News: API Route /api/news で news.json から取得
 
 export type Work = {
   id: string;
@@ -31,18 +32,12 @@ export type WorkResponse = {
 };
 
 export type News = {
-  id: string;
+  id: number | string;
   title: string;
   body: string;
   publishedAt: string;
-  updatedAt: string;
-  createdAt: string;
-  revisedAt: string;
 };
 
 export type NewsResponse = {
   contents: News[];
-  totalCount: number;
-  offset: number;
-  limit: number;
 };

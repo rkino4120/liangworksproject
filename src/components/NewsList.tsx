@@ -9,7 +9,7 @@ type NewsListProps = {
 };
 
 export default function NewsList({ news }: NewsListProps) {
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const [openItems, setOpenItems] = useState<Set<string | number>>(new Set());
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -20,7 +20,7 @@ export default function NewsList({ news }: NewsListProps) {
     });
   };
 
-  const toggleItem = (id: string) => {
+  const toggleItem = (id: string | number) => {
     setOpenItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {

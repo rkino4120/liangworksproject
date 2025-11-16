@@ -1,27 +1,21 @@
 import { NextResponse } from 'next/server';
-import { createClient } from 'microcms-js-sdk';
-
-// サーバーサイド専用のクライアント（NEXT_PUBLIC_なしの環境変数を使用）
-const client = createClient({
-  serviceDomain: process.env.MICROCMS_SERVICE_DOMAIN!,
-  apiKey: process.env.MICROCMS_API_KEY!,
-});
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function GET() {
   try {
-    const response = await client.get({
-      endpoint: 'news',
-      queries: {
-        fields: 'id,title,body,publishedAt,updatedAt',
-        limit: 5,
-        orders: '-publishedAt',
-      },
-    });
-    return NextResponse.json(response);
+    const filePath = path.join(process.cwd(), 'public', 'news.json');
+    const raw = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+
+    // Support both { news: [...] } and { contents: [...] }
+    const contents = parsed.contents ?? parsed.news ?? [];
+
+    return NextResponse.json({ contents });
   } catch (error) {
-    console.error('Failed to fetch news:', error);
+    console.error('Failed to read news.json:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch news' },
+      { error: 'Failed to read news' },
       { status: 500 }
     );
   }
